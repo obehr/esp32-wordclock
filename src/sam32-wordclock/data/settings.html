@@ -1,0 +1,236 @@
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.16.0/jquery.validate.min.js"></script>
+    <style>
+      body {
+        color: #434343;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-size: 14px;
+        line-height: 1.42857142857143;
+        padding: 20px;
+      }
+      .container {
+        margin: 0 auto;
+        max-width: 400px;
+      }
+      form .error {
+        color: #8A1F11 !important;
+        border-color: #8A1F11;
+      }
+      label.error {
+        text-transform: none
+      }
+      p.error {
+        margin-bottom: 10px
+      }
+      p.inline-errors, p.error {
+        background: none
+          border-color: none
+        border: none
+        clear: both
+        font-size: 12px
+      }
+      form .field-group {
+        box-sizing: border-box;
+        clear: both;
+        padding: 4px 0;
+        position: relative;
+        margin: 1px 0;
+        width: 100%;
+      }
+      form .field-group > label {
+        color: #757575;
+        display: block;
+        margin: 0 0 5px 0;
+        padding: 5px 0 0;
+        position: relative;
+        word-wrap: break-word;
+      }
+      input {
+        background: #fff;
+        border: 1px solid #d0d0d0;
+        border-radius: 2px;
+        box-sizing: border-box;
+        color: #434343;
+        font-family: inherit;
+        font-size: inherit;
+        height: 2.14285714em;
+        line-height: 1.4285714285714;
+        padding: 4px 5px;
+        margin: 0;
+        width: 100%;
+      }
+      input:focus {
+        border-color: #4C669F;
+        outline: 0;
+      }
+      .button-container {
+        box-sizing: border-box;
+        clear: both;
+        margin: 1px 0 0;
+        padding: 4px 0;
+        position: relative;
+        width: 100%;
+      }
+      button[type=submit] {
+        box-sizing: border-box;
+        background: #f5f5f5;
+        border: 1px solid #bdbdbd;
+        border-radius: 2px;
+        color: #434343;
+        cursor: pointer;
+        display: inline-block;
+        font-family: inherit;
+        font-size: 14px;
+        font-variant: normal;
+        font-weight: 400;
+        height: 2.14285714em;
+        line-height: 1.42857143;
+        margin: 0;
+        padding: 4px 10px;
+        text-decoration: none;
+        vertical-align: baseline;
+        white-space: nowrap;
+      }
+    </style>
+    <title>ConfigManager</title>
+  </head>
+  <body>
+    <div class="container">
+      <h3 style="text-align: left;">General Settings</h3>
+      <form method="post" action="/settings">
+        <div class="field-group">
+          <label>Hour</label>
+          <input name="hour" type="text" size="2">
+        </div>
+        <div class="field-group">
+          <label>Minute</label>
+          <input name="minute" type="text" size="2">
+        </div>
+        <div class="field-group">
+          <label>NTP Usage (yes/no)</label>
+          <input name="ntpUse" type="text" size="3">
+        </div>
+        <div class="field-group">
+          <label>NTP Server</label>
+          <input name="ntpServer" type="text" size="20">
+        </div>
+		<h3 style="text-align: left;">Color Management</h3>
+		<ul>
+		<li>Red (0..) "HUE_RED"</li>
+		<li>Orange (32..) "HUE_ORANGE"</li>
+		<li>Yellow (64..) "HUE_YELLOW"</li>
+		<li>Green (96..) "HUE_GREEN"</li>
+		<li>Aqua (128..) "HUE_AQUA"</li>
+		<li>Blue (160..) "HUE_BLUE"</li>
+		<li>Purple (192..) "HUE_PURPLE"</li>
+		<li>Pink(224..) "HUE_PINK"</li>
+		</ul>
+        <div class="field-group">
+          <label>Color 1</label>
+          <input name="c1" type="text" size="5">
+        </div>
+		<div class="field-group">
+          <label>Color 2</label>
+          <input name="c2" type="text" size="5">
+        </div>
+		<div class="field-group">
+          <label>Color 3</label>
+          <input name="c3" type="text" size="5">
+        </div>
+		<div class="field-group">
+          <label>Color 4</label>
+          <input name="c4" type="text" size="5">
+        </div>
+		<div class="field-group">
+          <label>Saturation</label>
+          <input name="sat" type="text" size="3">
+        </div>
+		<div class="field-group">
+          <label>Brightness</label>
+          <input name="bri" type="text" size="3">
+        </div>
+        <div class="button-container">
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+    <script>
+      $.ajax({
+             url: '/settings',
+             success: function(data) {
+               $.each(data, function(key, value, data) {
+                 var input = "input:text[name='" + key + "']";
+                 $(input).val(value)
+               });
+             }
+      });
+      $.fn.serializeObject = function() {
+        var o = {};
+        var a = this.serializeArray();
+        $.each(a, function() {
+          if (o[this.name]) {
+            if (!o[this.name].push) {
+              o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+          } else {
+            o[this.name] = this.value || '';
+          }
+        });
+        return o;
+      };
+      var validationSettings = {
+        rules: {
+          hour: {
+            required: false
+          },
+          minute: {
+            required: false
+          },
+          second: {
+            required: false
+          },
+          ntpUse: {
+            required: false
+          },
+          ntpServer: {
+            required: false
+          },
+          c1: {
+            required: false
+		  },
+          c2: {
+            required: false
+		  },
+          c3: {
+            required: false
+		  },
+          brightness: {
+            required: false
+          }
+        }
+      };
+      $('form').validate(validationSettings);
+      $('form').on('submit', function(e) {
+        if($(this).valid()) {
+          e.preventDefault();
+          var formData = $(this).serializeObject();
+          // Send data as a PUT request
+          $.ajax({
+                 url: '/settings',
+                 type: 'PUT',
+                 data: JSON.stringify(formData),
+                 contentType: 'application/json',
+                 success: function(data) {
+                   console.log(formData);
+                 }
+          });
+          return false;
+        }
+      });
+    </script>
+  </body>
+</html>
