@@ -7,7 +7,7 @@
 
 
 
-#define WORDLAYOUT 1
+const int WORDLAYOUT = 1;
 
 
 int aktuelleMinute;

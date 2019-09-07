@@ -1,20 +1,14 @@
 #include <FastLED.h>
 #include "QList.h"
-#include "ConfigManager.h"
-#include "time.h"
-#include <WiFi.h>
-#include "display.hpp"
 
-#include "QList.h"
 #include "display.hpp"
 
 
-#define DATA_PIN 13
-#define MATRIXLAYOUT 1
-#define WORDLAYOUT 1
-#define ORIENTATION 1
+const int DATA_PIN = 13;
+const int MATRIXLAYOUT = 1;
+const int ORIENTATION = 1;
 
-char matrixZiffernblattLayout1[8][8] = 
+const char matrixZiffernblattLayout1[8][8] = 
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -27,7 +21,7 @@ char matrixZiffernblattLayout1[8][8] =
 };
 
 
-char matrixZiffernblattLayout2[8][8] = 
+const char matrixZiffernblattLayout2[8][8] = 
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -39,7 +33,7 @@ char matrixZiffernblattLayout2[8][8] =
   'o', 'c', 'l', 'o', 'c', 'k', 'f', 'n'
 };
 
-char matrixZiffernblattLayout3[8][8] = 
+const char matrixZiffernblattLayout3[8][8] = 
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -75,6 +69,7 @@ struct castedConfig {
   uint16_t sat = 255;
 };
 
+// Use global variable. It is defined somewhere else (in a .cpp file).
 extern castedConfig validConfig;
 
 void display_setup(void)
