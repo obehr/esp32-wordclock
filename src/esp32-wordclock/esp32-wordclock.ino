@@ -119,6 +119,7 @@ void setup()
   configManager.addParameter("enabled", &config.enabled);
   configManager.addParameter("version", &meta.version, get);
   configManager.setAPICallback(createCustomRoute);
+  configManager.setAPCallback(createCustomRoute);
   configManager.begin(config);
 
   Serial.println("Init Colors");
