@@ -165,121 +165,121 @@ void setzeFarben()
 void loop() 
 {
   configManager.loop();
-  if(countdown>0)
-  { countdown--; }
+  
+  checkConfig(false);
+  checkWifi(false);
+  
+  if(countdown2 > 0)
+  {
+    countdown2--;
+    bearbeiteListe(3);
+  }
   else
   {
-    checkConfig(false);
-    checkWifi(false);
-    if(countdown2>0)
+    Serial.println();
+    Serial.print("Updating time...");
+    getLocalTime(&timeinfo);
+    Serial.print("Done");
+    
+    uint8_t internalHour = timeinfo.tm_hour;
+    uint8_t internalMinute = timeinfo.tm_min;
+    uint8_t tempHour = internalHour%12;
+    uint8_t tempMinute = (internalMinute+2)%60/5;
+   
+    if(internalMinute>32)
+    { tempHour=(tempHour+1)%12; }
+
+    Serial.println();
+    Serial.print("Current time: ");
+    Serial.print(internalHour);
+    Serial.print(":");
+    Serial.print(internalMinute);
+    Serial.print(":");
+    Serial.print(timeinfo.tm_sec);
+    
+    if(tempHour!=letzteStunde or tempMinute!=letzteMinute)
     {
-      countdown2--;
-      bearbeiteListe(3);
+      Serial.println();
+      Serial.print("Stelle Uhrzeit um von Stunde ");
+      Serial.print(letzteStunde);
+      Serial.print(" auf ");
+      Serial.print(tempHour);
+      Serial.print(" und Minute ");
+      Serial.print(letzteMinute);
+      Serial.print(" auf "); 
+      Serial.print(tempMinute);
+      Serial.println();
+      Serial.print("In Worten: its ");
+      Serial.print(wordsMinute[tempMinute]);
+      Serial.print(" (");
+      Serial.print(tempMinute);
+      Serial.print(") ");
+      Serial.print(wordsHour[tempHour]);
+      Serial.print(" (");
+      Serial.print(tempHour);
+      Serial.print(") ");
+      
+      clearLists();
+  
+      if(letzteStunde!=-1){ reiheWortItsInListe(0); }//kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
+      reiheWortItsInListe(1);
+      reiheWortItsInListe(2);
+      reiheDummiesInListe(3,2);
+      
+      if(letzteMinute>0)
+      { 
+        reiheMinutenInListe(letzteMinute,0,WORDLAYOUT);
+        reihePastOderToInListe(letzteMinute,0,WORDLAYOUT);
+      }
+      
+      if(tempMinute>0)
+      { 
+        reiheMinutenInListe(tempMinute,1,WORDLAYOUT);
+        reiheMinutenInListe(tempMinute,2,WORDLAYOUT);
+        reiheDummiesInListe(3,2);
+        reihePastOderToInListe(tempMinute,1,WORDLAYOUT);
+        reihePastOderToInListe(tempMinute,2,WORDLAYOUT);
+        reiheDummiesInListe(3,2);
+      }
+
+      if(letzteStunde!=-1)
+      { reiheStundenInListe(letzteStunde,0,WORDLAYOUT); }
+      
+      if(tempHour!=-1)
+      {
+        reiheStundenInListe(tempHour,1,WORDLAYOUT);
+        reiheStundenInListe(tempHour,2,WORDLAYOUT);
+        reiheDummiesInListe(3,2);
+      }
+      
+      if(letzteMinute==0)
+      { reiheWortOclockInListe(0,WORDLAYOUT); }
+      
+      if(tempMinute==0)
+      { 
+        reiheWortOclockInListe(1,WORDLAYOUT); 
+        reiheWortOclockInListe(2,WORDLAYOUT);
+      }
+  
+      bearbeiteListe(2);
+      letzteStunde=tempHour;
+      letzteMinute=tempMinute;
     }
     else
     {
-      Serial.println();
-      Serial.print("Updating time...");
-      getLocalTime(&timeinfo);
-      Serial.print("Done");
-      
-      uint8_t internalHour = timeinfo.tm_hour;
-      uint8_t internalMinute = timeinfo.tm_min;
-      uint8_t tempHour = internalHour%12;
-      uint8_t tempMinute = (internalMinute+2)%60/5;
-     
-      if(internalMinute>32)
-      { tempHour=(tempHour+1)%12; }
-  
-      Serial.println();
-      Serial.print("Current time: ");
-      Serial.print(internalHour);
-      Serial.print(":");
-      Serial.print(internalMinute);
-      Serial.print(":");
-      Serial.print(timeinfo.tm_sec);
-      
-      if(tempHour!=letzteStunde or tempMinute!=letzteMinute)
-      {
-        Serial.println();
-        Serial.print("Stelle Uhrzeit um von Stunde ");
-        Serial.print(letzteStunde);
-        Serial.print(" auf ");
-        Serial.print(tempHour);
-        Serial.print(" und Minute ");
-        Serial.print(letzteMinute);
-        Serial.print(" auf "); 
-        Serial.print(tempMinute);
-        Serial.println();
-        Serial.print("In Worten: its ");
-        Serial.print(wordsMinute[tempMinute]);
-        Serial.print(" (");
-        Serial.print(tempMinute);
-        Serial.print(") ");
-        Serial.print(wordsHour[tempHour]);
-        Serial.print(" (");
-        Serial.print(tempHour);
-        Serial.print(") ");
-        
-        clearLists();
-    
-        if(letzteStunde!=-1){ reiheWortItsInListe(0); }//kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
-        reiheWortItsInListe(1);
-        reiheWortItsInListe(2);
-        reiheDummiesInListe(3,2);
-        
-        if(letzteMinute>0)
-        { 
-          reiheMinutenInListe(letzteMinute,0,WORDLAYOUT);
-          reihePastOderToInListe(letzteMinute,0,WORDLAYOUT);
-        }
-        
-        if(tempMinute>0)
-        { 
-          reiheMinutenInListe(tempMinute,1,WORDLAYOUT);
-          reiheMinutenInListe(tempMinute,2,WORDLAYOUT);
-          reiheDummiesInListe(3,2);
-          reihePastOderToInListe(tempMinute,1,WORDLAYOUT);
-          reihePastOderToInListe(tempMinute,2,WORDLAYOUT);
-          reiheDummiesInListe(3,2);
-        }
-  
-        if(letzteStunde!=-1)
-        { reiheStundenInListe(letzteStunde,0,WORDLAYOUT); }
-        
-        if(tempHour!=-1)
-        {
-          reiheStundenInListe(tempHour,1,WORDLAYOUT);
-          reiheStundenInListe(tempHour,2,WORDLAYOUT);
-          reiheDummiesInListe(3,2);
-        }
-        
-        if(letzteMinute==0)
-        { reiheWortOclockInListe(0,WORDLAYOUT); }
-        
-        if(tempMinute==0)
-        { 
-          reiheWortOclockInListe(1,WORDLAYOUT); 
-          reiheWortOclockInListe(2,WORDLAYOUT);
-        }
-    
-        bearbeiteListe(2);
-        letzteStunde=tempHour;
-        letzteMinute=tempMinute;
-      }
-      else
-      {
-        Serial.println();
-        Serial.print("Keine Veränderung der Zeitanzeige");
-        bearbeiteListe(3);
-      }
-      
-      Serial.println();
-      Serial.print("--------------");
-      countdown2=10;
+      Serial.println("Keine Veränderung der Zeitanzeige");
+      bearbeiteListe(3);
     }
-    countdown=65535;
+    
+    Serial.println("--------------");
+    countdown2 = 10;
   }
+
+  // Sleep for 5 seconds
+  esp_sleep_enable_timer_wakeup(5e6);
+  esp_light_sleep_start();
+  Serial.println("Wake up.");
+
 }
 
 void checkConfig(boolean init)
