@@ -25,16 +25,6 @@
     using WebServer = ESP8266WebServer;
 #endif
 
-#define DEBUG_MODE false
-
-#if (DEBUG_MODE)
-    #define DebugPrintln(a) (Serial.println(a))
-    #define DebugPrint(a) (Serial.print(a))
-#else
-    #define DebugPrintln(a)
-    #define DebugPrint(a)
-#endif
-
 enum Mode {ap, api};
 
 enum ParameterMode { get, set, both};
@@ -139,7 +129,6 @@ public:
     void setWifiConnectInterval(const int interval);
     void setAPCallback(std::function<void(WebServer*)> callback);
     void setAPICallback(std::function<void(WebServer*)> callback);
-    void reset();
     void loop();
 
     template<typename T>
@@ -172,7 +161,6 @@ private:
     Mode mode;
     void *config;
     size_t configSize;
-    bool debug;
 
     char *apName = (char *)"Thing";
     char *apPassword = NULL;
@@ -193,12 +181,11 @@ private:
     JsonObject &decodeJson(String jsonString);
 
     void handleAPGet();
-	void handleJQueryGet();
-	void handleJQueryValidateGet();
     void handleAPPost();
     void handleRESTGet();
-    void handleListGet();
     void handleRESTPut();
+    void handleJQueryGet();
+    void handleJQueryValidateGet();
     void handleNotFound();
 
     bool wifiConnected();

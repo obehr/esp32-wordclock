@@ -48,10 +48,9 @@ void ConfigManager::loop() {
         ESP.restart();
     }
 
-    // Disable captative portal
-    // if (dnsServer) {
-    //     dnsServer->processNextRequest();
-    // }
+    if (dnsServer) {
+        dnsServer->processNextRequest();
+    }
 
     if (server) {
         server->handleClient();
@@ -84,7 +83,7 @@ void ConfigManager::handleAPGet() {
 
     File f = SPIFFS.open(apFilename, "r");
     if (!f) {
-        DebugPrintln(F("file open failed"));
+        Serial.println(F("file open failed"));
         server->send(404, FPSTR(mimeHTML), F("File not found"));
         return;
     }
@@ -99,7 +98,7 @@ void ConfigManager::handleJQueryValidateGet() {
 
     File f = SPIFFS.open("/jquery-1.1.9.1.validate.min.js", "r");
     if (!f) {
-        DebugPrintln(F("file open failed"));
+        //DebugPrintln(F("file open failed"));
         server->send(404, FPSTR(mimeHTML), F("File not found"));
         return;
     }
@@ -114,7 +113,7 @@ void ConfigManager::handleJQueryGet() {
 
     File f = SPIFFS.open("/jquery-3.4.1.min.js", "r");
     if (!f) {
-        DebugPrintln(F("file open failed"));
+        //DebugPrintln(F("file open failed"));
         server->send(404, FPSTR(mimeHTML), F("File not found"));
         return;
     }
@@ -155,14 +154,12 @@ void ConfigManager::handleAPPost() {
     EEPROM.put(WIFI_OFFSET + 32, passwordChar);
     EEPROM.commit();
 
-    server->send(204, FPSTR(mimePlain), F("Saved. Will attempt to reboot in 3 seconds."));
+    server->send(204, FPSTR(mimePlain), F("Saved. Will attempt to reboot."));
 
-    delay(3000);
     ESP.restart();
 }
 
 void ConfigManager::handleRESTGet() {
-	DebugPrint(F("REST get"));
     DynamicJsonBuffer jsonBuffer;
     JsonObject& obj = jsonBuffer.createObject();
 
@@ -181,40 +178,7 @@ void ConfigManager::handleRESTGet() {
     server->send(200, FPSTR(mimeJSON), body);
 }
 
-void ConfigManager::handleListGet() {
-	DebugPrint(F("REST List get"));
-    DynamicJsonBuffer jsonBuffer;
-    JsonArray& jsonArray = jsonBuffer.createArray();
-
-    int n = WiFi.scanNetworks();
-    DebugPrintln("scan done");
-    if (n == 0) {
-        DebugPrintln("no networks found");
-    } else {
-        DebugPrint(n);
-        DebugPrintln(" networks found");
-
-        for (int i = 0; i < n; ++i) {
-            DynamicJsonBuffer jsonBufferItem;
-            JsonObject& obj = jsonBuffer.createObject();
-            String ssid = WiFi.SSID(i);
-            int rssi = WiFi.RSSI(i);
-            obj.set("ssid", ssid);
-            obj.set("length", rssi);
-            obj.set("security", "none");
-            jsonArray.add(obj);
-            delay(10);
-        }
-    }
-
-    String body;
-    jsonArray.printTo(body);
-
-    server->send(200, FPSTR(mimeJSON), body);
-}
-
 void ConfigManager::handleRESTPut() {
-	DebugPrint(F("REST put"));
     JsonObject& obj = this->decodeJson(server->arg("plain"));
     if (!obj.success()) {
         server->send(400, FPSTR(mimeJSON), "");
@@ -236,7 +200,6 @@ void ConfigManager::handleRESTPut() {
 }
 
 void ConfigManager::handleNotFound() {
-	DebugPrint(F("unknown handle"));
     if (!isIp(server->hostHeader()) ) {
         server->sendHeader("Location", String("http://") + toStringIP(server->client().localIP()), true);
         server->send(302, FPSTR(mimePlain), ""); // Empty content inhibits Content-length header so we have to close the socket ourselves.
@@ -249,23 +212,23 @@ void ConfigManager::handleNotFound() {
 }
 
 bool ConfigManager::wifiConnected() {
-    DebugPrint(F("Waiting for WiFi to connect"));
+    Serial.print(F("Waiting for WiFi to connect"));
 
     int i = 0;
     while (i < wifiConnectRetries) {
         if (WiFi.status() == WL_CONNECTED) {
-            DebugPrintln("");
+            Serial.println("");
             return true;
         }
 
-        DebugPrint(".");
+        Serial.print(".");
 
         delay(wifiConnectInterval);
         i++;
     }
 
-    DebugPrintln("");
-    DebugPrintln(F("Connection timed out"));
+    Serial.println("");
+    Serial.println(F("Connection timed out"));
 
     return false;
 }
@@ -275,7 +238,7 @@ void ConfigManager::setup() {
     char ssid[32];
     char password[64];
 
-    DebugPrintln(F("Reading saved configuration"));
+    Serial.println(F("Reading saved configuration"));
 
     EEPROM.get(0, magic);
     EEPROM.get(WIFI_OFFSET, ssid);
@@ -285,10 +248,10 @@ void ConfigManager::setup() {
     if (memcmp(magic, magicBytes, 2) == 0) {
         WiFi.begin(ssid, password[0] == '\0' ? NULL : password);
         if (wifiConnected()) {
-            DebugPrint(F("Connected to "));
-            DebugPrint(ssid);
-            DebugPrint(F(" with "));
-            DebugPrintln(WiFi.localIP());
+            Serial.print(F("Connected to "));
+            Serial.print(ssid);
+            Serial.print(F(" with "));
+            Serial.println(WiFi.localIP());
 
             WiFi.mode(WIFI_STA);
             startApi();
@@ -302,34 +265,13 @@ void ConfigManager::setup() {
     startAP();
 }
 
-void ConfigManager::reset() {
-    // char magic[2];
-    char ssid[32];
-    char password[64];
-
-    for (int i = 0; i < sizeof(ssid); i++) {
-        ssid[i] = 0;
-    }
-    
-    for (int i = 0; i < sizeof(password); i++) {
-        password[i] = 0;
-    }
-
-    EEPROM.put(0, 0);
-    EEPROM.put(WIFI_OFFSET, ssid);
-    EEPROM.put(WIFI_OFFSET + 32, password);
-    EEPROM.commit();
-
-    setup();
-}
-
 void ConfigManager::startAP() {
     const char* headerKeys[] = {"Content-Type"};
     size_t headerKeysSize = sizeof(headerKeys)/sizeof(char*);
 
     mode = ap;
 
-    DebugPrintln(F("Starting Access Point"));
+    Serial.println(F("Starting Access Point"));
 
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apName, apPassword);
@@ -341,8 +283,8 @@ void ConfigManager::startAP() {
     WiFi.softAPConfig(ip, ip, NMask);
 	
     IPAddress myIP = WiFi.softAPIP();
-    DebugPrint("AP IP address: ");
-    DebugPrintln(myIP);
+    Serial.print("AP IP address: ");
+    Serial.println(myIP);
 
     dnsServer.reset(new DNSServer);
     dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
@@ -352,14 +294,8 @@ void ConfigManager::startAP() {
     server->collectHeaders(headerKeys, headerKeysSize);
     server->on("/", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleAPGet, this));
     server->on("/", HTTPMethod::HTTP_POST, std::bind(&ConfigManager::handleAPPost, this));
-	server->on("/jquery-3.4.1.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryGet, this));
-	server->on("/jquery-1.1.9.1.validate.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryValidateGet, this));
-	server->on("/settings", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleRESTGet, this));
-    server->on("/list", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleListGet, this));
-    server->on("/settings", HTTPMethod::HTTP_PUT, std::bind(&ConfigManager::handleRESTPut, this));
     server->onNotFound(std::bind(&ConfigManager::handleNotFound, this));
 
-	
     if (apCallback) {
         apCallback(server.get());
     }
@@ -379,10 +315,9 @@ void ConfigManager::startApi() {
     server->collectHeaders(headerKeys, headerKeysSize);
     server->on("/", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleAPGet, this));
     server->on("/", HTTPMethod::HTTP_POST, std::bind(&ConfigManager::handleAPPost, this));
-	server->on("/jquery-3.4.1.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryGet, this));
-	server->on("/jquery-1.1.9.1.validate.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryValidateGet, this));
+    server->on("/jquery-3.4.1.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryGet, this));
+    server->on("/jquery-1.1.9.1.validate.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryValidateGet, this));
     server->on("/settings", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleRESTGet, this));
-    server->on("/list", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleListGet, this));
     server->on("/settings", HTTPMethod::HTTP_PUT, std::bind(&ConfigManager::handleRESTPut, this));
     server->onNotFound(std::bind(&ConfigManager::handleNotFound, this));
 
