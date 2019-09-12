@@ -7,7 +7,7 @@
 
 
 
-const int WORDLAYOUT = 1;
+const int WORDLAYOUT = 2;
 
 
 int aktuelleMinute;
@@ -313,54 +313,84 @@ void checkConfig(boolean init)
   boolean changeTime = false;
 
   int tempInt = atoi(config.c1);
-  if (validConfig.c1 != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.c1 = tempInt;
-    changeColor = true;
-    Serial.println("Color 1 changed");
+    if(validConfig.c1 != tempInt)
+    {
+      validConfig.c1 = tempInt;
+      changeColor = true;
+      Serial.println("Color 1 changed");
+    }
   }
+  else
+  { itoa(validConfig.c1, config.c1, 10); }
 
   tempInt = atoi(config.c2);
-  if (validConfig.c2 != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.c2 = tempInt;
-    changeColor = true;
-    Serial.println("Color 2 changed");
+    if(validConfig.c2 != tempInt)
+    {
+      validConfig.c2 = tempInt;
+      changeColor = true;
+      Serial.println("Color 2 changed");
+    }
   }
+  else
+  { itoa(validConfig.c2, config.c2, 10); }
 
   tempInt = atoi(config.c3);
-  if (validConfig.c3 != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.c3 = tempInt;
-    changeColor = true;
-    Serial.println("Color 3 changed");
+    if(validConfig.c3 != tempInt)
+    {
+      validConfig.c3 = tempInt;
+      changeColor = true;
+      Serial.println("Color 3 changed");
+    }
   }
+  else
+  { itoa(validConfig.c3, config.c3, 10); }
 
   tempInt = atoi(config.c4);
-  if (validConfig.c4 != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.c4 = tempInt;
-    changeColor = true;
-    Serial.println("Color 4 changed");
+    if(validConfig.c4 != tempInt)
+    {
+      validConfig.c4 = tempInt;
+      changeColor = true;
+      Serial.println("Color 4 changed");
+    }
   }
+  else
+  { itoa(validConfig.c4, config.c4, 10); }
 
   tempInt = atoi(config.sat);
-  if (validConfig.sat != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.sat = tempInt;
-    changeColor = true;
-    Serial.println("sat changed");
+    if(validConfig.sat != tempInt)
+    {
+      validConfig.sat = tempInt;
+      changeColor = true;
+      Serial.println("Saturation changed");
+    }
   }
+  else
+  { itoa(validConfig.sat, config.sat, 10); }
 
   tempInt = atoi(config.bri);
-  if (validConfig.bri != tempInt and tempInt > 0 and tempInt <= 256)
+  if (tempInt >= 0 and tempInt < 256)
   {
-    validConfig.bri = tempInt;
-    changeColor = true;
-    Serial.println("bri changed");
+    if(validConfig.bri != tempInt)
+    {
+      validConfig.bri = tempInt;
+      changeColor = true;
+      Serial.println("Brightness changed");
+    }
   }
+  else
+  { itoa(validConfig.bri, config.bri, 10); }
 
-  boolean tempNtpUse = strcmp(config.ntpUse, "yes") == 0;
+  boolean tempNtpUse = strcmp(config.ntpUse, "yes") == 0 and configManager.getMode() == 1;
   if (validConfig.ntpUse != tempNtpUse)
   {
     validConfig.ntpUse = tempNtpUse;
@@ -387,7 +417,6 @@ void checkConfig(boolean init)
 
   if (changeTimeCfg or init)
   {
-
     Serial.print("Activate NTP");
     WiFi.config(0U, 0U, 0U);
     FastLED.delay(5000);
@@ -396,30 +425,39 @@ void checkConfig(boolean init)
     setenv("TZ", "CET-1CEST,M3.5.0/02,M10.5.0/03", 1);
     getLocalTime(&timeinfo);
     ntpZuletztVerwendet = true;
-
   }
 
   if (!validConfig.ntpUse)
   {
     tempInt = atoi(config.hour);
-    if (validConfig.hour != tempInt and tempInt >= 0 and tempInt < 24)
+    if (tempInt >= 0 and tempInt < 24)
     {
-      validConfig.hour = tempInt;
-      changeTime = true;
-      Serial.println();
-      Serial.print("hour changed to ");
-      Serial.print(validConfig.hour);
+      if (validConfig.hour != tempInt)
+      {
+        validConfig.hour = tempInt;
+        changeTime = true;
+        Serial.println();
+        Serial.print("hour changed to ");
+        Serial.print(validConfig.hour);
+      }
     }
+    else
+    { itoa(validConfig.hour, config.hour, 10); }
 
     tempInt = atoi(config.minute);
-    if (validConfig.minute != tempInt and tempInt >= 0 and tempInt < 60)
+    if (tempInt >= 0 and tempInt < 24)
     {
-      validConfig.minute = tempInt;
-      changeTime = true;
-      Serial.println();
-      Serial.print("minute changed to ");
-      Serial.print(validConfig.minute);
+      if (validConfig.minute != tempInt)
+      {
+        validConfig.minute = tempInt;
+        changeTime = true;
+        Serial.println();
+        Serial.print("minute changed to ");
+        Serial.print(validConfig.minute);
+      }
     }
+    else
+    { itoa(validConfig.minute, config.minute, 10); }
   }
 
   if (changeColor or init)
