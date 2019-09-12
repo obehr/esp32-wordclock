@@ -294,6 +294,10 @@ void ConfigManager::startAP() {
     server->collectHeaders(headerKeys, headerKeysSize);
     server->on("/", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleAPGet, this));
     server->on("/", HTTPMethod::HTTP_POST, std::bind(&ConfigManager::handleAPPost, this));
+    server->on("/jquery-3.4.1.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryGet, this));
+    server->on("/jquery-1.1.9.1.validate.min.js", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleJQueryValidateGet, this));
+    server->on("/settings", HTTPMethod::HTTP_GET, std::bind(&ConfigManager::handleRESTGet, this));
+    server->on("/settings", HTTPMethod::HTTP_PUT, std::bind(&ConfigManager::handleRESTPut, this));
     server->onNotFound(std::bind(&ConfigManager::handleNotFound, this));
 
     if (apCallback) {
