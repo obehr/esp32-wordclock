@@ -7,7 +7,7 @@
 
 
 
-const int WORDLAYOUT = 1;
+const int WORDLAYOUT = 2;
 
 
 int aktuelleMinute;
@@ -360,7 +360,7 @@ void checkConfig(boolean init)
     Serial.println("bri changed");
   }
 
-  boolean tempNtpUse = strcmp(config.ntpUse, "yes") == 0;
+  boolean tempNtpUse = strcmp(config.ntpUse, "yes") == 0 and configManager.getMode() == 1;
   if (validConfig.ntpUse != tempNtpUse)
   {
     validConfig.ntpUse = tempNtpUse;
