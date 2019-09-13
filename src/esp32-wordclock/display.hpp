@@ -2,7 +2,7 @@
 #include "QList.h"
 
 void display_setup(void);
-void clearLists(void);
+void clearLists(int liste);
 
 void createMatrix(int variante);
 
