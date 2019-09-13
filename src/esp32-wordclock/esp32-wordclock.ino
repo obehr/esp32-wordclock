@@ -62,6 +62,12 @@ const char mimeHTML[] PROGMEM = "text/html";
 const char *configHTMLFile = "/settings.html";
 
 const char* ntpServer = "fritz.box";
+const char* passwort1 = "SOURSEVE";
+const char* passwort2 = "SVNEHTNV";
+const char* passwort3 = "OSVNRNEV";
+const char* apName1 = "WordclockV1";
+const char* apName2 = "WordclockV2";
+const char* apName3 = "WordclockV3";
 
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;
@@ -107,14 +113,14 @@ void setup()
   meta.version = 3; //ConfigManagaer
 
   Serial.println("Init ConfigManager");
-  configManager.setAPName("Wordclock");
+  configManager.setAPName((WORDLAYOUT==1)?apName1:(WORDLAYOUT==2)?apName2:apName3);
+  configManager.setAPPassword((WORDLAYOUT==1)?passwort1:(WORDLAYOUT==2)?passwort2:passwort3);
   configManager.setAPFilename("/index.html");
 
   configManager.addParameter("hour",      config.hour,   10);
   configManager.addParameter("minute",    config.minute, 10);
   configManager.addParameter("ntpUse",    config.ntpUse, 10);
   configManager.addParameter("ntpServer", config.ntpServer, 20);
-  //configManager.addParameter("mqtt_password", config.mqtt_password, 10, set);
   configManager.addParameter("c1",        config.c1,     10);
   configManager.addParameter("c2",        config.c2,     10);
   configManager.addParameter("c3",        config.c3,     10);
@@ -236,7 +242,7 @@ else
       Serial.print(tempHour);
       Serial.print(") ");
 
-      clearLists();
+      clearLists(-1);
 
       if (letzteStunde != -1) {
         reiheWortItsInListe(0);  //kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
@@ -510,6 +516,44 @@ void zeigeNachrichtOk()
   bearbeiteListe(8);
 }
 
+void zeigePasswort()
+{
+  bearbeiteListe(7);
+  int offsetLayout = 0;
+  if (WORDLAYOUT == 3)
+  {
+    offsetLayout = 1;
+  }
+
+  int wortPW[2][2] =
+  {
+    4, 2,
+    4 + offsetLayout, 3,
+  };
+  reiheLedsInListe(wortPW, 2, 3, WORDLAYOUT);
+  bearbeiteListe(5);
+  FastLED.delay(1000);
+  clearLists(3);
+
+  int wortSechsteZeile[10][2] =
+  {
+    0,5,
+    1,5,
+    2,5,
+    3,5,
+    4,5,
+    5,5,
+    6,5,
+    7,5
+  };
+  reiheLedsInListe(wortSechsteZeile, 8, 3, WORDLAYOUT);
+  bearbeiteListe(4);
+  FastLED.delay(10000);
+  reiheLedsInListe(wortPW, 8, 3, WORDLAYOUT);
+  bearbeiteListe(6);
+  bearbeiteListe(8);
+}
+
 void checkWifi(boolean init)
 {
   boolean inAPModeAktuell = configManager.getMode() == 0;
@@ -525,6 +569,7 @@ void checkWifi(boolean init)
       bearbeiteListe(4);
       FastLED.delay(2000);
       bearbeiteListe(6);
+      zeigePasswort();
       IPAddress local = WiFi.softAPIP();
       zeigeIPAdresse(local, 0, 3);
     }
@@ -553,6 +598,17 @@ void zeigeIPAdresse(IPAddress ip, int startOktett, int endeOktett)
   Serial.println();
   Serial.print("Zeige IP Adresse auf Uhr: ");
   Serial.print(ip);
+
+  int wortIP[2][2] =
+  {
+    4, 1,
+    4, 2
+  };
+  reiheLedsInListe(wortIP, 2, 3, WORDLAYOUT);
+  bearbeiteListe(5);
+  FastLED.delay(2000);
+  bearbeiteListe(6);
+  
   for (int i = startOktett; i <= endeOktett; i++)
   {
     Serial.println();
