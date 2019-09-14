@@ -254,6 +254,7 @@ void ConfigManager::setup() {
             Serial.println(WiFi.localIP());
 
             WiFi.mode(WIFI_STA);
+            WiFi.setSleep(true);
             startApi();
             return;
         }
