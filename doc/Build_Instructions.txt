@@ -1,0 +1,24 @@
+
+# Platformio installieren
+sudo pip3 install -U platformio
+
+# Projekt erstellen und toolchain runterladen:
+mkdir ~/projekt
+cd ~/projekt
+platformio init --ide eclipse --board esp32dev
+
+# Libraries nachinstallieren
+platformio lib install FastLED
+platformio lib install QList
+platformio lib install "ArduinoJson@5.10.0"
+
+# Eclipse-Projekt importieren
+Eclipse öffnen
+File -> Import -> Existing Projects into Workspace
+
+# Kompilieren und Flashen
+platformio run --target upload
+
+Anleitungen ausführlich:
+https://docs.platformio.org/en/latest/installation.html
+https://docs.platformio.org/en/latest/ide/eclipse.html

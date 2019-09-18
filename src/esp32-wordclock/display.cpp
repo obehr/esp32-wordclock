@@ -6,7 +6,7 @@
 
 const int DATA_PIN = 13;
 const int MATRIXLAYOUT = 1;
-const int ORIENTATION = 1;
+const int ORIENTATION = 0;
 
 const char matrixZiffernblattLayout1[8][8] = 
 {
@@ -80,11 +80,16 @@ void display_setup(void)
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(matrix, 64);
 }
 
-void clearLists(void)
+void clearLists(int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
 {
-  listeAufbau.clear();
-  listeAbbau.clear();
-  listeEffekt.clear();
+  if(liste == 0 or liste==-1)
+  { listeAbbau.clear(); }
+  if(liste == 1 or liste==-1)
+  { listeAbbau.clear(); }
+  if(liste == 2 or liste==-1)
+  { listeEffekt.clear(); }
+  if(liste == 3 or liste==-1)
+  { listeNachricht.clear(); }
 }
 
 void createMatrix(int variante)
