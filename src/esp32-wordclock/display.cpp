@@ -6,7 +6,7 @@
 
 const int DATA_PIN = 13;
 const int MATRIXLAYOUT = 1;
-const int ORIENTATION = 0;
+const int ORIENTATION = 1;
 
 const char matrixZiffernblattLayout1[8][8] = 
 {

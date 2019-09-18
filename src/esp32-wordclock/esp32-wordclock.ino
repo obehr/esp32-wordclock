@@ -7,7 +7,7 @@
 
 
 
-const int WORDLAYOUT = 2;
+const int WORDLAYOUT = 1;
 
 
 int aktuelleMinute;
@@ -176,8 +176,6 @@ void setzeFarben()
   setzeFarbe(validConfig.c1);
 }
 
-
-
 void loop()
 {
   // Always do...
@@ -186,8 +184,8 @@ void loop()
   checkWifi(false);
 
   // Periodically
-  // a) Flash LEDs every ~ 10*countdown milliseconds
-  // b) Update time every ~ 10*countdown*countdown2 milliseconds
+  // a) Flash LEDs every ~ 1*countdown milliseconds
+  // b) Update time every ~ 1*countdown*countdown2 milliseconds
   if (countdown > 0)
   {
     countdown--;
@@ -197,7 +195,7 @@ void loop()
     // Countdown1 is zero
 
     // Reload
-    countdown = 1000;
+    countdown = 10000;
     
     if (countdown2 > 0)
     {
@@ -212,62 +210,17 @@ void loop()
         
       // Reload
       countdown2 = 10;
-
-      Serial.println();
-      Serial.print("Stelle Uhrzeit um von Stunde ");
-      Serial.print(letzteStunde);
-      Serial.print(" auf ");
-      Serial.print(tempHour);
-      Serial.print(" und Minute ");
-      Serial.print(letzteMinute);
-      Serial.print(" auf ");
-      Serial.print(tempMinute);
-      Serial.println();
-      Serial.print("In Worten: its ");
-      Serial.print(wordsMinute[tempMinute]);
-      Serial.print(" (");
-      Serial.print(tempMinute);
-      Serial.print(") ");
-      Serial.print(wordsHour[tempHour]);
-      Serial.print(" (");
-      Serial.print(tempHour);
-      Serial.print(") ");
-
-      clearLists(-1);
-
-      if (letzteStunde != -1) {
-        reiheWortItsInListe(0);  //kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
-      }
-      reiheWortItsInListe(1);
-      reiheWortItsInListe(2);
-      reiheDummiesInListe(3, 2);
-
-      if (letzteMinute > 0)
-      {
-        reiheMinutenInListe(letzteMinute, 0, WORDLAYOUT);
-        reihePastOderToInListe(letzteMinute, 0, WORDLAYOUT);
-      }
-
-      if (tempMinute > 0)
-      {
-        reiheMinutenInListe(tempMinute, 1, WORDLAYOUT);
-        reiheMinutenInListe(tempMinute, 2, WORDLAYOUT);
-        reiheDummiesInListe(3, 2);
-        reihePastOderToInListe(tempMinute, 1, WORDLAYOUT);
-        reihePastOderToInListe(tempMinute, 2, WORDLAYOUT);
-        reiheDummiesInListe(3, 2);
-      }
-
+      
       Serial.println();
       Serial.print("Updating time...");
       getLocalTime(&timeinfo);
       Serial.print("Done");
-  
-      uint8_t internalHour = timeinfo.tm_hour;
+
+      uint8_t internalHour   = timeinfo.tm_hour;
       uint8_t internalMinute = timeinfo.tm_min;
-      uint8_t tempHour = internalHour % 12;
-      uint8_t tempMinute = (internalMinute + 2) % 60 / 5;
-  
+      uint8_t tempHour       = internalHour % 12;
+      uint8_t tempMinute     = (internalMinute + 2) % 60 / 5;
+      
       if (internalMinute > 32)
       {
         tempHour = (tempHour + 1) % 12;
@@ -280,7 +233,7 @@ void loop()
       Serial.print(internalMinute);
       Serial.print(":");
       Serial.print(timeinfo.tm_sec);
-  
+      
       if (tempHour != letzteStunde or tempMinute != letzteMinute)
       {
         Serial.println();
@@ -303,7 +256,7 @@ void loop()
         Serial.print(tempHour);
         Serial.print(") ");
   
-        clearLists();
+        clearLists(-1);
   
         if (letzteStunde != -1) {
           reiheWortItsInListe(0);  //kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
@@ -311,13 +264,13 @@ void loop()
         reiheWortItsInListe(1);
         reiheWortItsInListe(2);
         reiheDummiesInListe(3, 2);
-  
+        
         if (letzteMinute > 0)
         {
           reiheMinutenInListe(letzteMinute, 0, WORDLAYOUT);
           reihePastOderToInListe(letzteMinute, 0, WORDLAYOUT);
         }
-  
+
         if (tempMinute > 0)
         {
           reiheMinutenInListe(tempMinute, 1, WORDLAYOUT);
@@ -327,7 +280,8 @@ void loop()
           reihePastOderToInListe(tempMinute, 2, WORDLAYOUT);
           reiheDummiesInListe(3, 2);
         }
-  
+        
+        
         if (letzteStunde != -1)
         {
           reiheStundenInListe(letzteStunde, 0, WORDLAYOUT);
@@ -339,7 +293,7 @@ void loop()
           reiheStundenInListe(tempHour, 2, WORDLAYOUT);
           reiheDummiesInListe(3, 2);
         }
-  
+        
         if (letzteMinute == 0)
         {
           reiheWortOclockInListe(0, WORDLAYOUT);
@@ -365,7 +319,7 @@ void loop()
       Serial.println();
     }
   }
-  delay(10);
+  delay(1);
   // Sleep for 5 seconds
 //  esp_sleep_enable_timer_wakeup(5e6);
 //  esp_light_sleep_start();
