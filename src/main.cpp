@@ -2,7 +2,6 @@
 #include "QList.h"
 #include "ConfigManager.h"
 #include "time.h"
-#include <WiFi.h>
 #include "display.hpp"
 
 #include "main.hpp"
@@ -85,31 +84,28 @@ struct Metadata
 
 ConfigManager configManager;
 
-void
-createCustomRoute (WebServer *server)
+void createCustomRoute (WebServer *server)
 {
-    server->on ("/settings.html", HTTPMethod::HTTP_GET, [server]
-    ()
-    {
-        SPIFFS.begin();
-
-        File f = SPIFFS.open(configHTMLFile, "r");
-        if (!f)
+    server->on ("/settings.html", HTTPMethod::HTTP_GET, [server] ()
         {
-            Serial.println(F("file open failed"));
-            server->send(404, FPSTR(mimeHTML), F("File not found 5"));
-            return;
+            SPIFFS.begin();
+
+            File f = SPIFFS.open(configHTMLFile, "r");
+            if (!f)
+            {
+                Serial.println(F("file open failed"));
+                server->send(404, FPSTR(mimeHTML), F("File not found 5"));
+                return;
+            }
+
+            server->streamFile(f, FPSTR(mimeHTML));
+
+            f.close();
         }
-
-        server->streamFile(f, FPSTR(mimeHTML));
-
-        f.close();
-    }
     );
 }
 
-void
-setup ()
+void setup ()
 {
     Serial.begin (115200);
     Serial.println ("Setup started");
@@ -150,8 +146,7 @@ setup ()
     countdown2 = 0;
 }
 
-void
-setzeFarben ()
+void setzeFarben ()
 {
     Serial.println ();
     Serial.print ("Setze Farben: ");
@@ -183,8 +178,7 @@ setzeFarben ()
     setzeFarbe (validConfig.c1);
 }
 
-void
-loop ()
+void loop ()
 {
     // Always do...
     configManager.loop ();
@@ -330,8 +324,7 @@ loop ()
     delay (1);
 }
 
-void
-checkConfig (bool init)
+void checkConfig (bool init)
 {
     bool changeColor = false;
     bool changeTimeCfg = false;
@@ -531,8 +524,7 @@ checkConfig (bool init)
     }
 }
 
-void
-zeigeNachrichtOk ()
+void zeigeNachrichtOk ()
 {
     bearbeiteListe (7);
     int offsetLayout = 0;
@@ -550,8 +542,7 @@ zeigeNachrichtOk ()
     bearbeiteListe (8);
 }
 
-void
-zeigePasswort ()
+void zeigePasswort ()
 {
     bearbeiteListe (7);
     int offsetLayout = 0;
@@ -577,8 +568,7 @@ zeigePasswort ()
     bearbeiteListe (8);
 }
 
-void
-checkWifi (bool init)
+void checkWifi (bool init)
 {
     bool inAPModeAktuell = configManager.getMode () == 0;
     bool wifiAktuell = WiFi.status () == WL_CONNECTED;
@@ -617,8 +607,7 @@ checkWifi (bool init)
     }
 }
 
-void
-zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
+void zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
 {
     Serial.println ();
     Serial.print ("Zeige IP Adresse auf Uhr: ");
