@@ -20,7 +20,6 @@ const char matrixZiffernblattLayout1[8][8] =
   'x', 'n', 'o', 'c', 'l', 'o', 'c', 'k'
 };
 
-
 const char matrixZiffernblattLayout2[8][8] = 
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
@@ -56,419 +55,491 @@ uint8_t matrixLeds[8][8];
 uint16_t ledFarbzuweisung[64];
 
 
-struct castedConfig {
-  boolean ntpUse = true;
-  String ntpServer = "fritz.box";
-  uint8_t hour = 0;
-  uint8_t minute = 0;
-  uint16_t c1 = 50;
-  uint16_t c2 = 100;
-  uint16_t c3 = 150;
-  uint16_t c4 = 200;
-  uint16_t bri = 100;
-  uint16_t sat = 255;
+struct castedConfig
+{
+    boolean ntpUse = true;
+    String ntpServer = "fritz.box";
+    uint8_t hour = 0;
+    uint8_t minute = 0;
+    uint16_t c1 = 50;
+    uint16_t c2 = 100;
+    uint16_t c3 = 150;
+    uint16_t c4 = 200;
+    uint16_t bri = 100;
+    uint16_t sat = 255;
 };
 
 // Use global variable. It is defined somewhere else (in a .cpp file).
 extern castedConfig validConfig;
 
-void display_setup(void)
+void display_setup (void)
 {
-  Serial.println("Init LED Matrix");
-  createMatrix(MATRIXLAYOUT);
-  turnMatrix(ORIENTATION);
-  FastLED.addLeds<NEOPIXEL, DATA_PIN>(matrix, 64);
+    Serial.println ("Init LED Matrix");
+    createMatrix (MATRIXLAYOUT);
+    turnMatrix (ORIENTATION);
+    FastLED.addLeds<NEOPIXEL, DATA_PIN> (matrix, 64);
 }
 
-void clearLists(int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
+void clearLists (int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
 {
-  if(liste == 0 or liste==-1)
-  { listeAbbau.clear(); }
-  if(liste == 1 or liste==-1)
-  { listeAbbau.clear(); }
-  if(liste == 2 or liste==-1)
-  { listeEffekt.clear(); }
-  if(liste == 3 or liste==-1)
-  { listeNachricht.clear(); }
+    if (liste == 0 or liste == -1)
+    {
+        listeAbbau.clear ();
+    }
+    if (liste == 1 or liste == -1)
+    {
+        listeAbbau.clear ();
+    }
+    if (liste == 2 or liste == -1)
+    {
+        listeEffekt.clear ();
+    }
+    if (liste == 3 or liste == -1)
+    {
+        listeNachricht.clear ();
+    }
 }
 
-void createMatrix(int variante)
+void createMatrix (int variante)
 {
-  int x=8;
-  int y=8;
-  if(variante==1) 
-  /*
-   * 0  1  2  3  4  5  6  7
-   * 8  9  10 11 12 13 14 15
-   * 16 17 18 19 20 21 22 23
-   * ...
-   */
-  {
-    for(int yi=0; yi<y; yi++)
+    int x = 8;
+    int y = 8;
+    if (variante == 1)
+    /*
+     * 0  1  2  3  4  5  6  7
+     * 8  9  10 11 12 13 14 15
+     * 16 17 18 19 20 21 22 23
+     * ...
+     */
     {
-     for(int xi=0; xi<x; xi++)
-      {
-        matrixLeds[xi][yi]= xi + yi*x;
-      }
+        for (int yi = 0; yi < y; yi++)
+        {
+            for (int xi = 0; xi < x; xi++)
+            {
+                matrixLeds[xi][yi] = xi + yi * x;
+            }
+        }
     }
-  }
-  else if(variante==2) 
-  /*
-   * 0  1  2  3  4  5  6  7
-   * 15 14 13 12 11 10 9  8
-   * 16 17 18 19 20 21 22 23
-   * ...
-   */
-  {
-    for(int yi=0; yi<y; yi++)
+    else if (variante == 2)
+    /*
+     * 0  1  2  3  4  5  6  7
+     * 15 14 13 12 11 10 9  8
+     * 16 17 18 19 20 21 22 23
+     * ...
+     */
     {
-      for(int xi=0; xi<x; xi++)
-      {
-        matrixLeds[xi][yi]= xi + yi*x;
-      }
-      yi++;
-      for(int xi=0; xi<x; xi++)
-      {
-        matrixLeds[7-xi][yi]= xi + yi*x;
-      }
+        for (int yi = 0; yi < y; yi++)
+        {
+            for (int xi = 0; xi < x; xi++)
+            {
+                matrixLeds[xi][yi] = xi + yi * x;
+            }
+            yi++;
+            for (int xi = 0; xi < x; xi++)
+            {
+                matrixLeds[7 - xi][yi] = xi + yi * x;
+            }
+        }
     }
-  }
 }
 
-void turnMatrix(int orientation)
+void turnMatrix (int orientation)
 {
-  if(orientation>0 and orientation <4)
-  {
-    Serial.println("Drehe Matrix. Ergebnis:");
-    int matrixTemp[8][8];
-    int x=8;
-    int y=8;
-    for(int yi=0; yi<y; yi++)
+    if (orientation > 0 and orientation < 4)
     {
-      for(int xi=0; xi<x; xi++)
-      {
-        if(orientation==1) //turn once clockwise 90degree
-        { matrixTemp[xi][yi] = matrixLeds[x-yi-1][xi]; }
-        
-        else if(orientation==2) //turn twice 90degree
-        { matrixTemp[xi][yi] = matrixLeds[x-xi-1][y-yi-1]; }
-        
-        else if(orientation==3) //turn once counter clockwise 90degree
-        { matrixTemp[xi][yi] = matrixLeds[yi][y-xi-1]; }
-      }
+        Serial.println ("Drehe Matrix. Ergebnis:");
+        int matrixTemp[8][8];
+        int x = 8;
+        int y = 8;
+        for (int yi = 0; yi < y; yi++)
+        {
+            for (int xi = 0; xi < x; xi++)
+            {
+                if (orientation == 1) //turn once clockwise 90degree
+                {
+                    matrixTemp[xi][yi] = matrixLeds[x - yi - 1][xi];
+                }
+
+                else if (orientation == 2) //turn twice 90degree
+                {
+                    matrixTemp[xi][yi] = matrixLeds[x - xi - 1][y - yi - 1];
+                }
+
+                else if (orientation == 3) //turn once counter clockwise 90degree
+                {
+                    matrixTemp[xi][yi] = matrixLeds[yi][y - xi - 1];
+                }
+            }
+        }
+        for (int yi = 0; yi < y; yi++)
+        {
+            Serial.println ();
+            for (int xi = 0; xi < x; xi++)
+            {
+                matrixLeds[xi][yi] = matrixTemp[xi][yi];
+                Serial.print (matrixLeds[xi][yi]);
+                Serial.print (" ");
+            }
+        }
     }
-    for(int yi=0; yi<y; yi++)
-    {
-      Serial.println();
-      for(int xi=0; xi<x; xi++)
-      { 
-        matrixLeds[xi][yi] = matrixTemp[xi][yi]; 
-        Serial.print(matrixLeds[xi][yi]);
-        Serial.print(" ");
-      }
-    }
-  }
 }
 
 
 void reiheWortItsInListe(int liste)
 {
-  Serial.println();
-  Serial.print("->Wort ITS hinzufuegen: ");
-  int wortIts[3][2] = 
-  {
-    0,0,
-    1,0,
-    2,0    
-  };
-  reiheLedsInListe(wortIts, 3, liste, 1);
+    Serial.println();
+    Serial.print("->Wort ITS hinzufuegen: ");
+    int wortIts[3][2] =
+    {
+        0,0,
+        1,0,
+        2,0
+    };
+    reiheLedsInListe(wortIts, 3, liste, 1);
 }
 
-void reiheLedsInListe(int wort[][2], int laenge, int liste, int wordLayout)
+void reiheLedsInListe (int wort[][2], int laenge, int liste, int wordLayout)
 {
-  Serial.println();
-  Serial.print("Leds in Liste ");
-  Serial.print(liste);
-  Serial.print(" einreihen: ");
-  
-  int x;
-  int y;
-  uint8_t ledId;
-  for(int i=0; i<laenge; i++)
-  {
-    x=wort[i][0];
-    y=wort[i][1];
-    ledId=matrixLeds[x][y];
-    Serial.print(ledId);
-    reiheLedInListe(ledId, liste);
-    Serial.print("(");
-    if(wordLayout==1)
-    { Serial.print(matrixZiffernblattLayout1[y][x]); }
-    else if(wordLayout==2)
-    { Serial.print(matrixZiffernblattLayout2[y][x]); }
-    else if(wordLayout==3)
-    { Serial.print(matrixZiffernblattLayout3[y][x]); }
-    Serial.print(") ");
-  }
-  Serial.println();
-  Serial.print("--------------");
+    Serial.println ();
+    Serial.print ("Leds in Liste ");
+    Serial.print (liste);
+    Serial.print (" einreihen: ");
+
+    int x;
+    int y;
+    uint8_t ledId;
+    for (int i = 0; i < laenge; i++)
+    {
+        x = wort[i][0];
+        y = wort[i][1];
+        ledId = matrixLeds[x][y];
+        Serial.print (ledId);
+        reiheLedInListe (ledId, liste);
+        Serial.print ("(");
+        if (wordLayout == 1)
+        {
+            Serial.print (matrixZiffernblattLayout1[y][x]);
+        }
+        else if (wordLayout == 2)
+        {
+            Serial.print (matrixZiffernblattLayout2[y][x]);
+        }
+        else if (wordLayout == 3)
+        {
+            Serial.print (matrixZiffernblattLayout3[y][x]);
+        }
+        Serial.print (") ");
+    }
+    Serial.println ();
+    Serial.print ("--------------");
 }
 
-void reiheLedInListe(int led, int liste)
+void reiheLedInListe (int led, int liste)
 {
-  
-  if(liste==0)
-  {
-    if(listeAbbau.indexOf(led)==-1)
-    { listeAbbau.push_back(led); }
-  }
-  else if(liste==1)
-  {
-    if(listeAufbau.indexOf(led)==-1)
-    { listeAufbau.push_back(led); }
-  }
-  else if(liste==2)
-  {
-    listeEffekt.push_back(led);
-  }
-  else if(liste==3)
-  {
-    listeNachricht.push_back(led);
-  }  
+
+    if (liste == 0)
+    {
+        if (listeAbbau.indexOf (led) == -1)
+        {
+            listeAbbau.push_back (led);
+        }
+    }
+    else if (liste == 1)
+    {
+        if (listeAufbau.indexOf (led) == -1)
+        {
+            listeAufbau.push_back (led);
+        }
+    }
+    else if (liste == 2)
+    {
+        listeEffekt.push_back (led);
+    }
+    else if (liste == 3)
+    {
+        listeNachricht.push_back (led);
+    }
 }
 
-void reiheDummiesInListe(int anzahl, int liste)
+void reiheDummiesInListe (int anzahl, int liste)
 {
-  for(int i=1;i<=anzahl; i++)
-  { reiheLedInListe(-1,liste); }
+    for (int i = 1; i <= anzahl; i++)
+    {
+        reiheLedInListe (-1, liste);
+    }
 }
 
-void bearbeiteListe(int modus)
+void bearbeiteListe (int modus)
 {
-  if(modus==1) //schalten
-  { 
-    iteriereLedsInListe(0,0,true,100);
-    iteriereLedsInListe(1,1,true,100);
-    listeAufbau.clear();
-    listeAbbau.clear();
-  }
-  else if(modus==2) //fade over
-  {
-    fadeLeds();
-    listeAufbau.clear();
-    listeAbbau.clear();
-  }
-  else if(modus==3) //short flash
-  {
-    flashLeds();
-  }
-  else if(modus==4) //notify green
-  {
-    iteriereLedsInListe(3, 3, true, 100);
+    if (modus == 1) //schalten
+    {
+        iteriereLedsInListe (0, 0, true, 100);
+        iteriereLedsInListe (1, 1, true, 100);
+        listeAufbau.clear ();
+        listeAbbau.clear ();
+    }
+    else if (modus == 2) //fade over
+    {
+        fadeLeds ();
+        listeAufbau.clear ();
+        listeAbbau.clear ();
+    }
+    else if (modus == 3) //short flash
+    {
+        flashLeds ();
+    }
+    else if (modus == 4) //notify green
+    {
+        iteriereLedsInListe (3, 3, true, 100);
 //    zeigeNachricht(96);
-  }
-  else if(modus==5) //notify red
-  {
-    iteriereLedsInListe(3, 4, true, 100);
+    }
+    else if (modus == 5) //notify red
+    {
+        iteriereLedsInListe (3, 4, true, 100);
 //    zeigeNachricht(0);
-  }
-  else if(modus==6) //notify off
-  {
-    iteriereLedsInListe(3, 0, true, 100);
-    listeNachricht.clear();
-  }
-  else if(modus==7) //before notify
-  {
-    iteriereLedsInListe(2,2,false,100);
-  }
-  else if(modus==8) //after notify
-  {
-    iteriereLedsInListe(1,1,false,100);
-  }
+    }
+    else if (modus == 6) //notify off
+    {
+        iteriereLedsInListe (3, 0, true, 100);
+        listeNachricht.clear ();
+    }
+    else if (modus == 7) //before notify
+    {
+        iteriereLedsInListe (2, 2, false, 100);
+    }
+    else if (modus == 8) //after notify
+    {
+        iteriereLedsInListe (1, 1, false, 100);
+    }
 }
 
-void iteriereLedsInListe(int liste, int aktion, boolean onebyone, int delay)
+void iteriereLedsInListe (int liste, int aktion, boolean onebyone, int delay)
 {
-  /*
-  Aktion 0: ausschalten
-  Aktion 1: einschalten
-  Aktion 2: FadeToBlackBy128
-  Aktion 3: grün färben
-  Aktion 4: rot färben
-  */
+    /*
+     Aktion 0: ausschalten
+     Aktion 1: einschalten
+     Aktion 2: FadeToBlackBy128
+     Aktion 3: grün färben
+     Aktion 4: rot färben
+     */
 
-  Serial.println();
-  Serial.print("Iteriere Liste ");
-  Serial.print(liste);
-  Serial.print(" für ");
-  Serial.print((aktion==0)?"Aktion 0: ausschalten":(aktion==1)?"Aktion 1: einschalten":(aktion==2)?"Aktion 2: FadeToBlackBy128":(aktion==3)?"Aktion 3: grün färben":(aktion==4)?"Aktion 3: grün färben":"ungueltige Aktion");
-  Serial.print((onebyone)?" onebyone Delay ":" Delay pro Durchgang ");
-  Serial.print(delay);
+    Serial.println ();
+    Serial.print ("Iteriere Liste ");
+    Serial.print (liste);
+    Serial.print (" für ");
+    Serial.print ((aktion == 0) ? "Aktion 0: ausschalten" : (aktion == 1) ? "Aktion 1: einschalten" :
+                  (aktion == 2) ? "Aktion 2: FadeToBlackBy128" : (aktion == 3) ? "Aktion 3: grün färben" :
+                  (aktion == 4) ? "Aktion 3: grün färben" : "ungueltige Aktion");
+    Serial.print ((onebyone) ? " onebyone Delay " : " Delay pro Durchgang ");
+    Serial.print (delay);
 
-  int ledId;
-  int laengeListe = (liste==0)?listeAbbau.length():(liste==1)?listeAufbau.length():(liste==2)?listeEffekt.length():(liste==3)?listeNachricht.length():-1;
+    int ledId;
+    int laengeListe = (liste == 0) ? listeAbbau.length () : (liste == 1) ? listeAufbau.length () :
+                      (liste == 2) ? listeEffekt.length () : (liste == 3) ? listeNachricht.length () : -1;
 
-  for(int i=0; i<laengeListe; i++)
-  {
-    ledId = (liste==0)?listeAbbau[i]:(liste==1)?listeAufbau[i]:(liste==2)?listeEffekt[i]:(liste==3)?listeNachricht[i]:-1;
-    
-    if(aktion==0) { matrix[ledId].setHSV(0,0,0); }
-    else if(aktion==1) { matrix[ledId].setHSV(ledFarbzuweisung[ledId], validConfig.sat, validConfig.bri); }
-    else if(aktion==2) { matrix[ledId].fadeToBlackBy(128); }
-    else if(aktion==3) { matrix[ledId].setHSV(96, validConfig.sat, validConfig.bri); }
-    else if(aktion==4) { matrix[ledId].setHSV(0, validConfig.sat, validConfig.bri); }
-    
-    if(onebyone) { FastLED.delay(delay); }
-  }
-  if(!onebyone) { FastLED.delay(delay); }
+    for (int i = 0; i < laengeListe; i++)
+    {
+        ledId = (liste == 0) ? listeAbbau[i] : (liste == 1) ? listeAufbau[i] : (liste == 2) ? listeEffekt[i] :
+                (liste == 3) ? listeNachricht[i] : -1;
+
+        if (aktion == 0)
+        {
+            matrix[ledId].setHSV (0, 0, 0);
+        }
+        else if (aktion == 1)
+        {
+            matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, validConfig.bri);
+        }
+        else if (aktion == 2)
+        {
+            matrix[ledId].fadeToBlackBy (128);
+        }
+        else if (aktion == 3)
+        {
+            matrix[ledId].setHSV (96, validConfig.sat, validConfig.bri);
+        }
+        else if (aktion == 4)
+        {
+            matrix[ledId].setHSV (0, validConfig.sat, validConfig.bri);
+        }
+
+        if (onebyone)
+        {
+            FastLED.delay (delay);
+        }
+    }
+    if (!onebyone)
+    {
+        FastLED.delay (delay);
+    }
 }
 
-
-void fadeLeds()
+void fadeLeds ()
 {
-/*
-  effektdauert gibt die Anzahl der Schritte an
-  delay zwischen den Schritten fix
-  fade out und fade in passieren gleichzeitig
-  wenn eine einzuschaltende led bereits eingeschaltet 
-  ist, so wird solange heruntergedimmt wie die Helligkeit
-  noch groesser dem aktuellen Zielwert ist
-*/
+    /*
+     effektdauert gibt die Anzahl der Schritte an
+     delay zwischen den Schritten fix
+     fade out und fade in passieren gleichzeitig
+     wenn eine einzuschaltende led bereits eingeschaltet
+     ist, so wird solange heruntergedimmt wie die Helligkeit
+     noch groesser dem aktuellen Zielwert ist
+     */
     int schrittweiteAufbau = 25;
     int schrittweiteAbbau = 5;
     int aktuelleHelligkeit;
     int neueHelligkeit;
     int volleHelligkeit = validConfig.bri;
     int ledId;
-    int offsetAufbau=50;
-    int offsetAbbau=10;
+    int offsetAufbau = 50;
+    int offsetAbbau = 10;
     int ledIndexAbbau;
-    int i=0;
+    int i = 0;
     boolean ausstehenderAufbau = true;
     boolean ausstehenderAbbau = true;
-    
-    while(ausstehenderAufbau or ausstehenderAbbau)
+
+    while (ausstehenderAufbau or ausstehenderAbbau)
     {
-      ausstehenderAufbau = false;
-      for(int j=0; j<listeAufbau.length(); j++)
-      {     
-        ledId = (int)listeAufbau.at(j);
-        neueHelligkeit = berechneHelligkeit(i,j,schrittweiteAufbau,offsetAufbau,volleHelligkeit,true);
-        if(neueHelligkeit<volleHelligkeit)
-        { ausstehenderAufbau = true; }
-        ledIndexAbbau = listeAbbau.indexOf(ledId);
-        if(ledIndexAbbau==-1)
-        { matrix[ledId].setHSV( ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit); }
-        else {
-          int helligkeitAbbau = berechneHelligkeit(i,ledIndexAbbau,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
-          if(neueHelligkeit>helligkeitAbbau)
-          {
-            listeAbbau.at(ledIndexAbbau)=-1;
-            matrix[ledId].setHSV( ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
-          }
-        }
-      }
-      
-      ausstehenderAbbau = false;
-      for(int k=0; k<listeAbbau.length(); k++)
-      {
-        ledId = (int)listeAbbau.at(k);
-        if(ledId>0)
+        ausstehenderAufbau = false;
+        for (int j = 0; j < listeAufbau.length (); j++)
         {
-          neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
-          if(neueHelligkeit>0)
-          { ausstehenderAbbau = true; }
-          matrix[ledId].setHSV(ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+            ledId = (int) listeAufbau.at (j);
+            neueHelligkeit = berechneHelligkeit (i, j, schrittweiteAufbau, offsetAufbau, volleHelligkeit, true);
+            if (neueHelligkeit < volleHelligkeit)
+            {
+                ausstehenderAufbau = true;
+            }
+            ledIndexAbbau = listeAbbau.indexOf (ledId);
+            if (ledIndexAbbau == -1)
+            {
+                matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+            }
+            else
+            {
+                int helligkeitAbbau = berechneHelligkeit (i, ledIndexAbbau, schrittweiteAbbau, offsetAbbau, volleHelligkeit,
+                                                          false);
+                if (neueHelligkeit > helligkeitAbbau)
+                {
+                    listeAbbau.at (ledIndexAbbau) = -1;
+                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                }
+            }
         }
-      }
-      FastLED.delay(50);
-      i++;
-    }  
+
+        ausstehenderAbbau = false;
+        for (int k = 0; k < listeAbbau.length (); k++)
+        {
+            ledId = (int) listeAbbau.at (k);
+            if (ledId > 0)
+            {
+                neueHelligkeit = berechneHelligkeit (i, k, schrittweiteAbbau, offsetAbbau, volleHelligkeit, false);
+                if (neueHelligkeit > 0)
+                {
+                    ausstehenderAbbau = true;
+                }
+                matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+            }
+        }
+        FastLED.delay (50);
+        i++;
+    }
 }
 
-int berechneHelligkeit(int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, boolean aufbau)
+int berechneHelligkeit (int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, boolean aufbau)
 {
-  int neueHelligkeit = (aufbau)? schritt*schrittweite-ledIndex*offset : volleHelligkeit-schritt*schrittweite+ledIndex*offset;
-  return (neueHelligkeit<0)?0:(neueHelligkeit>volleHelligkeit)?volleHelligkeit:neueHelligkeit;
+    int neueHelligkeit =
+                    (aufbau) ? schritt * schrittweite - ledIndex * offset : volleHelligkeit - schritt * schrittweite
+                                               + ledIndex * offset;
+    return (neueHelligkeit < 0) ? 0 : (neueHelligkeit > volleHelligkeit) ? volleHelligkeit : neueHelligkeit;
 }
 
-
-void flashLeds()
+void flashLeds ()
 {
     //effektdauert gibt die Anzahl der Schritte an
     //delay zwischen den Schritten fix
     //fade out und fade in passieren gleichzeitig
     //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
-    
+
     int normaleHelligkeit = validConfig.bri;
-    int maximaleHelligkeit = normaleHelligkeit*1.5;
-    maximaleHelligkeit = (maximaleHelligkeit>255)?255:maximaleHelligkeit;
+    int maximaleHelligkeit = normaleHelligkeit * 1.5;
+    maximaleHelligkeit = (maximaleHelligkeit > 255) ? 255 : maximaleHelligkeit;
     int differenz = maximaleHelligkeit - normaleHelligkeit;
     int neueHelligkeit;
     int led;
     int ledId;
-    int stepsFadeUp=5;
-    int stepsFadeDown=25;
-    int stepsDelay=3;
+    int stepsFadeUp = 5;
+    int stepsFadeDown = 25;
+    int stepsDelay = 3;
     int runde;
     int startPoint;
     int breakPoint;
     int endPoint;
-    int anzahlLeds = listeEffekt.length();
-    int anzahlRunden = (anzahlLeds-1) * stepsDelay + stepsFadeUp + stepsFadeDown + 1;
-    
-    for(int i=0; i<anzahlRunden; i++)
+    int anzahlLeds = listeEffekt.length ();
+    int anzahlRunden = (anzahlLeds - 1) * stepsDelay + stepsFadeUp + stepsFadeDown + 1;
+
+    for (int i = 0; i < anzahlRunden; i++)
     {
-      for(int j=0; j<anzahlLeds; j++)
-      {
-        startPoint = j*stepsDelay;
-        breakPoint = startPoint + stepsFadeUp;
-        endPoint = breakPoint + stepsFadeDown;
-        if(i>startPoint and i<=breakPoint)
-        { neueHelligkeit=normaleHelligkeit+(i-startPoint)*(differenz/stepsFadeUp); }
-        else if(i>breakPoint and i<=endPoint)
-        { neueHelligkeit=maximaleHelligkeit-(i-breakPoint)*(differenz/stepsFadeDown); }
-        else
-        { 
-          neueHelligkeit=-1; 
-        }
-
-        if(neueHelligkeit!=-1)
+        for (int j = 0; j < anzahlLeds; j++)
         {
-          ledId = (int)listeEffekt.at(j);
-          if(ledId!=-1)
-          { matrix[ledId].setHSV( ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit); }
+            startPoint = j * stepsDelay;
+            breakPoint = startPoint + stepsFadeUp;
+            endPoint = breakPoint + stepsFadeDown;
+            if (i > startPoint and i <= breakPoint)
+            {
+                neueHelligkeit = normaleHelligkeit + (i - startPoint) * (differenz / stepsFadeUp);
+            }
+            else if (i > breakPoint and i <= endPoint)
+            {
+                neueHelligkeit = maximaleHelligkeit - (i - breakPoint) * (differenz / stepsFadeDown);
+            }
+            else
+            {
+                neueHelligkeit = -1;
+            }
+
+            if (neueHelligkeit != -1)
+            {
+                ledId = (int) listeEffekt.at (j);
+                if (ledId != -1)
+                {
+                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                }
+            }
         }
-      }
-      FastLED.delay(50);
-    }      
+        FastLED.delay (50);
+    }
 }
 
-
-void setzeFarbe(uint16_t farbeLeds)
+void setzeFarbe (uint16_t farbeLeds)
 {
-  Serial.println();
-  Serial.print("->Setze Farbe: ");
-  Serial.print(farbeLeds);
-  int ledId;
-  for(int i=0; i<listeAufbau.length(); i++)
-  { 
-    ledId=(int)listeAufbau.at(i);
-    ledFarbzuweisung[ledId] = farbeLeds; }
-  listeAufbau.clear();
+    Serial.println ();
+    Serial.print ("->Setze Farbe: ");
+    Serial.print (farbeLeds);
+    int ledId;
+    for (int i = 0; i < listeAufbau.length (); i++)
+    {
+        ledId = (int) listeAufbau.at (i);
+        ledFarbzuweisung[ledId] = farbeLeds;
+    }
+    listeAufbau.clear ();
 }
 
-void reiheStundenInListe(int stunde, int liste, int wordLayout)
+void reiheStundenInListe (int stunde, int liste, int wordLayout)
 {
-   if(stunde>=0 and stunde<12)
-  {
-    if(wordLayout==1)
-    { reiheStundenInListeLayout1(stunde, liste, wordLayout); }
-    else if(wordLayout==2)
-    { reiheStundenInListeLayout2(stunde, liste, wordLayout); }
-    else if(wordLayout==3)
-    { reiheStundenInListeLayout3(stunde, liste, wordLayout); }
-  }
+    if (stunde >= 0 and stunde < 12)
+    {
+        if (wordLayout == 1)
+        {
+            reiheStundenInListeLayout1 (stunde, liste, wordLayout);
+        }
+        else if (wordLayout == 2)
+        {
+            reiheStundenInListeLayout2 (stunde, liste, wordLayout);
+        }
+        else if (wordLayout == 3)
+        {
+            reiheStundenInListeLayout3 (stunde, liste, wordLayout);
+        }
+    }
 }
 
 void reiheStundenInListeLayout1(int stunde, int liste, int wordlayout) 

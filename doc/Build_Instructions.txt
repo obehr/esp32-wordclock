@@ -19,6 +19,12 @@ File -> Import -> Existing Projects into Workspace
 # Kompilieren und Flashen
 platformio run --target upload
 
+# Daten hochladen
+platformio run --target uploadfs
+
+# Monitor
+platformio device monitor -p /dev/ttyUSB0 -b 115200
+
 Anleitungen ausführlich:
 https://docs.platformio.org/en/latest/installation.html
 https://docs.platformio.org/en/latest/ide/eclipse.html
