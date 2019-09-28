@@ -1,28 +1,30 @@
 #include "ConfigManager.h"
 
+const uint8_t ConfigManager::WIFI_OFFSET   = 2;
+const uint8_t ConfigManager::CONFIG_OFFSET = 98;
 
-const char magicBytes[2] = { 'C', 'M' };
+const char ConfigManager::magicBytes[]     PROGMEM = { 'C', 'M' };
+const char ConfigManager::mimeHTML[]       PROGMEM = "text/html";
+const char ConfigManager::mimeJSON[]       PROGMEM = "application/json";
+const char ConfigManager::mimePlain[]      PROGMEM = "text/plain";
+const char ConfigManager::configHTMLFile[] PROGMEM = "/settings.html";
+const char ConfigManager::apFilename[]     PROGMEM = "/index.html";
 
-const char mimeHTML[] PROGMEM = "text/html";
-const char mimeJSON[] PROGMEM = "application/json";
-const char mimePlain[] PROGMEM = "text/plain";
-const char *configHTMLFile = "/settings.html";
-
-void createCustomRoute (WebServer& server)
+void ConfigManager::createCustomRoute (WebServer& server)
 {
     server.on ("/settings.html", HTTPMethod::HTTP_GET, [&server] ()
         {
             SPIFFS.begin();
 
-            File f = SPIFFS.open(configHTMLFile, "r");
+            File f = SPIFFS.open(ConfigManager::configHTMLFile, "r");
             if (!f)
             {
                 Serial.println(F("file open failed"));
-                server.send(404, FPSTR(mimeHTML), F("File not found 5"));
+                server.send(404, FPSTR(ConfigManager::mimeHTML), F("File not found 5"));
                 return;
             }
 
-            server.streamFile(f, FPSTR(mimeHTML));
+            server.streamFile(f, FPSTR(ConfigManager::mimeHTML));
 
             f.close();
         }
@@ -55,8 +57,6 @@ ConfigManager::ConfigManager(WebServer& server, Networking& net) : server(server
     {
         apCallback (server);
     }
-    Serial.print ("Hallo Config");
-
 }
 
 void ConfigManager::loop ()
@@ -99,10 +99,6 @@ ConfigManager::decodeJson (String jsonString)
     }
 
     return obj;
-}
-void ConfigManager::setAPFilename (const char *filename)
-{
-    this->apFilename = (char*) filename;
 }
 
 void ConfigManager::handleAPGet ()
@@ -204,7 +200,7 @@ void ConfigManager::handleRESTGet ()
     std::list<BaseParameter*>::iterator it;
     for (it = parameters.begin (); it != parameters.end (); ++it)
     {
-        if ((*it)->getMode () == set)
+        if ((*it)->getMode () == BaseParameter::set)
         {
             continue;
         }
@@ -230,7 +226,7 @@ void ConfigManager::handleRESTPut ()
     std::list<BaseParameter*>::iterator it;
     for (it = parameters.begin (); it != parameters.end (); ++it)
     {
-        if ((*it)->getMode () == get)
+        if ((*it)->getMode () == BaseParameter::ParameterMode::get)
         {
             continue;
         }
@@ -299,7 +295,7 @@ void ConfigManager::setup ()
     if (memcmp (magic, magicBytes, 2) == 0)
     {
         WiFi.begin (ssid, password[0] == '\0' ? NULL : password);
-        if (net.wifiConnected())
+        if (net.wifiConnect())
         {
             Serial.print (F("Connected to "));
             Serial.print (ssid);

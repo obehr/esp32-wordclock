@@ -11,17 +11,17 @@
 
 class Networking {
 public:
-    Networking() {};
+    Networking(DNSServer& dnsServer);
     void setAPName(const char *name);
-        void setAPPassword(const char *password);
-        void setAPTimeout(const int timeout);
-        void setWifiConnectRetries(const int retries);
-        void setWifiConnectInterval(const int interval);
-    enum Mode {ap, api};
+    void setAPPassword(const char *password);
+    void setAPTimeout(const int timeout);
+    void setWifiConnectRetries(const int retries);
+    void setWifiConnectInterval(const int interval);
+    enum Mode {AP, API};
     Mode getMode();
     void loop();
 
-    bool wifiConnected();
+    bool wifiConnect();
     int apTimeout = 0;
     void startAP();
         void startApi();
@@ -35,7 +35,7 @@ private:
     int wifiConnectRetries = 20;
     int wifiConnectInterval = 500;
 
-    std::unique_ptr<DNSServer> dnsServer;
+    DNSServer& dnsServer;
 
 
 

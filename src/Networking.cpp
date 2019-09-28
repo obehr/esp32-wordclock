@@ -3,18 +3,19 @@
 
 
 
-const byte DNS_PORT = 53;
+const uint16_t DNS_PORT = 53;
+
+
+Networking::Networking(DNSServer& dnsServer) : dnsServer(dnsServer)
+{
+    this->mode = Mode::AP;
+}
 
 void Networking::loop ()
 {
-    if (mode == ap && apTimeout > 0 && ((millis () - apStart) / 1000) > apTimeout)
+    if (mode == Mode::AP && apTimeout > 0 && ((millis () - apStart) / 1000) > apTimeout)
     {
         ESP.restart ();
-    }
-
-    if (dnsServer)
-    {
-        dnsServer->processNextRequest ();
     }
 }
 
@@ -54,9 +55,7 @@ void Networking::setWifiConnectInterval (const int interval)
 
 void Networking::startAP ()
 {
-
-
-    mode = ap;
+    mode = AP;
 
     Serial.println (F("Starting Access Point"));
 
@@ -73,27 +72,18 @@ void Networking::startAP ()
     Serial.print ("AP IP address: ");
     Serial.println (myIP);
 
-    dnsServer.reset (new DNSServer);
-    dnsServer->setErrorReplyCode (DNSReplyCode::NoError);
-    dnsServer->start (DNS_PORT, "*", ip);
-
-    // server-on kram hier
+    dnsServer.setErrorReplyCode (DNSReplyCode::NoError);
+    dnsServer.start (DNS_PORT, "*", ip);
 
     apStart = millis ();
 }
 
 void Networking::startApi ()
 {
-    const char *headerKeys[] =
-        { "Content-Type" };
-    size_t headerKeysSize = sizeof(headerKeys) / sizeof(char*);
-
-    mode = api;
-
-    // server-on kram hier
+    mode = Mode::API;
 }
 
-bool Networking::wifiConnected ()
+bool Networking::wifiConnect ()
 {
     Serial.print (F("Waiting for WiFi to connect"));
 

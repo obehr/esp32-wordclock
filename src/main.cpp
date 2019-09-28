@@ -59,8 +59,6 @@ uint8_t countdown2;
 
 struct tm timeinfo;
 
-
-
 const char *ntpServer = "fritz.box";
 const char *passwort1 = "SOURSEVE";
 const char *passwort2 = "SVNEHTNV";
@@ -85,7 +83,8 @@ struct Metadata
 
 
 WebServer server;
-Networking net;
+DNSServer dnsServer;
+Networking net(dnsServer);
 ConfigManager configManager(server, net);
 
 void setup ()
@@ -100,7 +99,6 @@ void setup ()
     Serial.println ("Init ConfigManager");
     net.setAPName ((WORDLAYOUT == 1) ? apName1 : (WORDLAYOUT == 2) ? apName2 : apName3);
     net.setAPPassword ((WORDLAYOUT == 1) ? passwort1 : (WORDLAYOUT == 2) ? passwort2 : passwort3);
-    configManager.setAPFilename ("/index.html");
 
     configManager.addParameter ("hour", config.hour, 10);
     configManager.addParameter ("minute", config.minute, 10);
@@ -113,7 +111,7 @@ void setup ()
     configManager.addParameter ("sat", config.sat, 10);
     configManager.addParameter ("bri", config.bri, 10);
     configManager.addParameter ("enabled", &config.enabled);
-    configManager.addParameter ("version", &meta.version, get);
+    configManager.addParameter ("version", &meta.version, BaseParameter::ParameterMode::get);
 
     configManager.begin (config);
     server.begin();
@@ -168,6 +166,7 @@ void loop ()
 
     net.loop();
     server.handleClient ();
+    dnsServer.processNextRequest ();
 
 
     checkConfig (false);
@@ -319,7 +318,7 @@ void checkConfig (bool init)
     bool changeTime = false;
 
     int tempInt = atoi (config.c1);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.c1 != tempInt)
         {
@@ -334,7 +333,7 @@ void checkConfig (bool init)
     }
 
     tempInt = atoi (config.c2);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.c2 != tempInt)
         {
@@ -349,7 +348,7 @@ void checkConfig (bool init)
     }
 
     tempInt = atoi (config.c3);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.c3 != tempInt)
         {
@@ -364,7 +363,7 @@ void checkConfig (bool init)
     }
 
     tempInt = atoi (config.c4);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.c4 != tempInt)
         {
@@ -379,7 +378,7 @@ void checkConfig (bool init)
     }
 
     tempInt = atoi (config.sat);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.sat != tempInt)
         {
@@ -394,7 +393,7 @@ void checkConfig (bool init)
     }
 
     tempInt = atoi (config.bri);
-    if (tempInt >= 0 and tempInt < 256)
+    if (tempInt >= 0 && tempInt < 256)
     {
         if (validConfig.bri != tempInt)
         {
@@ -408,7 +407,7 @@ void checkConfig (bool init)
         itoa (validConfig.bri, config.bri, 10);
     }
 
-    bool tempNtpUse = strcmp (config.ntpUse, "yes") == 0 and net.getMode () == Networking::api;
+    bool tempNtpUse = (0U == strcmp (config.ntpUse, "yes")) && (net.getMode () == Networking::Mode::API);
     if (validConfig.ntpUse != tempNtpUse)
     {
         validConfig.ntpUse = tempNtpUse;
@@ -418,16 +417,16 @@ void checkConfig (bool init)
 
     if (validConfig.ntpUse)
     {
-        // TODO: Bad string / char array comparisons
-        if (config.ntpServer != ntpServer and config.ntpServer != "")
+        if ((0U != strcmp(config.ntpServer, ntpServer)) && (0U != strcmp(config.ntpServer, "")))
         {
+            // String changed and is not empty
             ntpServer = config.ntpServer;
             changeTimeCfg = true;
             Serial.println ("ntpServer changed");
         }
     }
 
-    if ((changeColor or changeTimeCfg) and !init)
+    if ((changeColor or changeTimeCfg) && !init)
     {
         Serial.println ("Colors or TimeCfg updated");
         zeigeNachrichtOk ();
@@ -449,7 +448,7 @@ void checkConfig (bool init)
     if (!validConfig.ntpUse)
     {
         tempInt = atoi (config.hour);
-        if (tempInt >= 0 and tempInt < 24)
+        if (tempInt >= 0 && tempInt < 24)
         {
             if (validConfig.hour != tempInt)
             {
@@ -466,7 +465,7 @@ void checkConfig (bool init)
         }
 
         tempInt = atoi (config.minute);
-        if (tempInt >= 0 and tempInt < 24)
+        if (tempInt >= 0 && tempInt < 24)
         {
             if (validConfig.minute != tempInt)
             {
@@ -558,7 +557,7 @@ void zeigePasswort ()
 
 void checkWifi (bool init)
 {
-    bool inAPModeAktuell = net.getMode () == Networking::ap;
+    bool inAPModeAktuell = net.getMode () == Networking::Mode::AP;
     bool wifiAktuell = WiFi.status () == WL_CONNECTED;
     if (init or wifiAktuell != wifiVerbunden or inAPModeAktuell != inAPMode)
     {
@@ -620,7 +619,7 @@ void zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
             Serial.print (" -> ");
             int ziffer = oktettChar[j] - '0';
             Serial.print (ziffer);
-            if (ziffer > 0 and ziffer <= 9)
+            if (ziffer > 0 && ziffer <= 9)
             {
                 reiheStundenInListe (ziffer, 3, WORDLAYOUT);
                 bearbeiteListe (4);

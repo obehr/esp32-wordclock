@@ -23,16 +23,17 @@
 
 #include "Networking.hpp"
 
-#define WIFI_OFFSET 2
-#define CONFIG_OFFSET 98
 
-enum ParameterMode { get, set, both};
+
+
 
 /**
  * Base Parameter
  */
 class BaseParameter {
 public:
+    virtual ~BaseParameter() {}
+    enum ParameterMode {get, set, both};
     virtual ParameterMode getMode() = 0;
     virtual void fromJson(JsonObject *json) = 0;
     virtual void toJson(JsonObject *json) = 0;
@@ -137,19 +138,18 @@ public:
         parameters.push_back(new ConfigParameter<T>(name, variable));
     }
     template<typename T>
-    void addParameter(const char *name, T *variable, ParameterMode mode) {
+    void addParameter(const char *name, T *variable, BaseParameter::ParameterMode mode) {
         parameters.push_back(new ConfigParameter<T>(name, variable, mode));
     }
     void addParameter(const char *name, char *variable, size_t size) {
         parameters.push_back(new ConfigStringParameter(name, variable, size));
     }
-    void addParameter(const char *name, char *variable, size_t size, ParameterMode mode) {
+    void addParameter(const char *name, char *variable, size_t size, BaseParameter::ParameterMode mode) {
         parameters.push_back(new ConfigStringParameter(name, variable, size, mode));
     }
     void save();
 
 
-    void setAPFilename(const char *filename);
 
 private:
 
@@ -160,6 +160,16 @@ private:
     Networking& net;
     std::list<BaseParameter*> parameters;
 
+    static const uint8_t WIFI_OFFSET;
+    static const uint8_t CONFIG_OFFSET;
+
+    static const char magicBytes[]     PROGMEM;
+    static const char mimeHTML[]       PROGMEM;
+    static const char mimeJSON[]       PROGMEM;
+    static const char mimePlain[]      PROGMEM;
+    static const char configHTMLFile[] PROGMEM;
+    static const char apFilename[]     PROGMEM;
+
     JsonObject &decodeJson(String jsonString);
 
     std::function<void(WebServer&)> apCallback;
@@ -167,8 +177,6 @@ private:
 
     void setAPCallback(std::function<void(WebServer&)> callback);
     void setAPICallback(std::function<void(WebServer&)> callback);
-
-    char *apFilename = (char *)"/index.html";
 
     void handleAPGet();
     void handleAPPost();
@@ -184,6 +192,8 @@ private:
 
     void readConfig();
     void writeConfig();
+
+    static void createCustomRoute (WebServer& server);
 };
 
 #endif /* __CONFIGMANAGER_H__ */
