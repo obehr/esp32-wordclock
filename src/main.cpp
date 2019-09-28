@@ -4,6 +4,8 @@
 #include "time.h"
 #include "display.hpp"
 
+
+
 #include "main.hpp"
 
 const int WORDLAYOUT = 1;
@@ -57,8 +59,7 @@ uint8_t countdown2;
 
 struct tm timeinfo;
 
-const char mimeHTML[] PROGMEM = "text/html";
-const char *configHTMLFile = "/settings.html";
+
 
 const char *ntpServer = "fritz.box";
 const char *passwort1 = "SOURSEVE";
@@ -82,28 +83,10 @@ struct Metadata
     int8_t version;
 } meta;
 
-ConfigManager configManager;
 
-void createCustomRoute (WebServer *server)
-{
-    server->on ("/settings.html", HTTPMethod::HTTP_GET, [server] ()
-        {
-            SPIFFS.begin();
-
-            File f = SPIFFS.open(configHTMLFile, "r");
-            if (!f)
-            {
-                Serial.println(F("file open failed"));
-                server->send(404, FPSTR(mimeHTML), F("File not found 5"));
-                return;
-            }
-
-            server->streamFile(f, FPSTR(mimeHTML));
-
-            f.close();
-        }
-    );
-}
+WebServer server;
+Networking net;
+ConfigManager configManager(server, net);
 
 void setup ()
 {
@@ -115,8 +98,8 @@ void setup ()
     meta.version = 3; //ConfigManagaer
 
     Serial.println ("Init ConfigManager");
-    configManager.setAPName ((WORDLAYOUT == 1) ? apName1 : (WORDLAYOUT == 2) ? apName2 : apName3);
-    configManager.setAPPassword ((WORDLAYOUT == 1) ? passwort1 : (WORDLAYOUT == 2) ? passwort2 : passwort3);
+    net.setAPName ((WORDLAYOUT == 1) ? apName1 : (WORDLAYOUT == 2) ? apName2 : apName3);
+    net.setAPPassword ((WORDLAYOUT == 1) ? passwort1 : (WORDLAYOUT == 2) ? passwort2 : passwort3);
     configManager.setAPFilename ("/index.html");
 
     configManager.addParameter ("hour", config.hour, 10);
@@ -131,9 +114,9 @@ void setup ()
     configManager.addParameter ("bri", config.bri, 10);
     configManager.addParameter ("enabled", &config.enabled);
     configManager.addParameter ("version", &meta.version, get);
-    configManager.setAPICallback (createCustomRoute);
-    configManager.setAPCallback (createCustomRoute);
+
     configManager.begin (config);
+    server.begin();
 
     Serial.println ("Init Colors");
     checkConfig (true);
@@ -182,6 +165,11 @@ void loop ()
 {
     // Always do...
     configManager.loop ();
+
+    net.loop();
+    server.handleClient ();
+
+
     checkConfig (false);
     checkWifi (false);
 
@@ -420,7 +408,7 @@ void checkConfig (bool init)
         itoa (validConfig.bri, config.bri, 10);
     }
 
-    bool tempNtpUse = strcmp (config.ntpUse, "yes") == 0 and configManager.getMode () == 1;
+    bool tempNtpUse = strcmp (config.ntpUse, "yes") == 0 and net.getMode () == Networking::api;
     if (validConfig.ntpUse != tempNtpUse)
     {
         validConfig.ntpUse = tempNtpUse;
@@ -570,7 +558,7 @@ void zeigePasswort ()
 
 void checkWifi (bool init)
 {
-    bool inAPModeAktuell = configManager.getMode () == 0;
+    bool inAPModeAktuell = net.getMode () == Networking::ap;
     bool wifiAktuell = WiFi.status () == WL_CONNECTED;
     if (init or wifiAktuell != wifiVerbunden or inAPModeAktuell != inAPMode)
     {

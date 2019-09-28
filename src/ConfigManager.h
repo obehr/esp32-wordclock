@@ -1,31 +1,30 @@
 #ifndef __CONFIGMANAGER_H__
 #define __CONFIGMANAGER_H__
 
-#include <DNSServer.h>
 #include <EEPROM.h>
 #include <FS.h>
+
+#include <functional>
+#include <list>
+#include <ArduinoJson.h>
+#include <SPIFFS.h>
 
 #if defined(ARDUINO_ARCH_ESP8266) //ESP8266
     #include <ESP8266WiFi.h>
     #include <ESP8266WebServer.h>
 #elif defined(ARDUINO_ARCH_ESP32) //ESP32
-    #include <SPIFFS.h>
     #include <WiFi.h>
     #include <WebServer.h>
 #endif
-
-#include <functional>
-#include <list>
-#include "ArduinoJson.h"
-
-#define WIFI_OFFSET 2
-#define CONFIG_OFFSET 98
 
 #if defined(ARDUINO_ARCH_ESP8266) //ESP8266
     using WebServer = ESP8266WebServer;
 #endif
 
-enum Mode {ap, api};
+#include "Networking.hpp"
+
+#define WIFI_OFFSET 2
+#define CONFIG_OFFSET 98
 
 enum ParameterMode { get, set, both};
 
@@ -116,19 +115,11 @@ private:
 /**
  * Config Manager
  */
-class ConfigManager {
+class ConfigManager
+{
 public:
-    ConfigManager() {}
+    ConfigManager(WebServer& server, Networking& net);
 
-    Mode getMode();
-    void setAPName(const char *name);
-    void setAPPassword(const char *password);
-    void setAPFilename(const char *filename);
-    void setAPTimeout(const int timeout);
-    void setWifiConnectRetries(const int retries);
-    void setWifiConnectInterval(const int interval);
-    void setAPCallback(std::function<void(WebServer*)> callback);
-    void setAPICallback(std::function<void(WebServer*)> callback);
     void loop();
 
     template<typename T>
@@ -157,28 +148,27 @@ public:
     }
     void save();
 
+
+    void setAPFilename(const char *filename);
+
 private:
-    Mode mode;
+
     void *config;
     size_t configSize;
 
-    char *apName = (char *)"Thing";
-    char *apPassword = NULL;
-    char *apFilename = (char *)"/index.html";
-    int apTimeout = 0;
-    unsigned long apStart = 0;
-
-    int wifiConnectRetries = 20;
-    int wifiConnectInterval = 500;
-
-    std::unique_ptr<DNSServer> dnsServer;
-    std::unique_ptr<WebServer> server;
+    WebServer& server;
+    Networking& net;
     std::list<BaseParameter*> parameters;
 
-    std::function<void(WebServer*)> apCallback;
-    std::function<void(WebServer*)> apiCallback;
-
     JsonObject &decodeJson(String jsonString);
+
+    std::function<void(WebServer&)> apCallback;
+    std::function<void(WebServer&)> apiCallback;
+
+    void setAPCallback(std::function<void(WebServer&)> callback);
+    void setAPICallback(std::function<void(WebServer&)> callback);
+
+    char *apFilename = (char *)"/index.html";
 
     void handleAPGet();
     void handleAPPost();
@@ -187,16 +177,13 @@ private:
     void handleJQueryGet();
     void handleJQueryValidateGet();
     void handleNotFound();
+    boolean isIp(String str);
 
-    bool wifiConnected();
+    String toStringIP(IPAddress ip);
     void setup();
-    void startAP();
-    void startApi();
 
     void readConfig();
     void writeConfig();
-    boolean isIp(String str);
-    String toStringIP(IPAddress ip);
 };
 
 #endif /* __CONFIGMANAGER_H__ */
