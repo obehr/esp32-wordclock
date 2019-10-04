@@ -1,39 +1,39 @@
 #ifndef __CONFIGMANAGER_H__
 #define __CONFIGMANAGER_H__
 
-#include <DNSServer.h>
 #include <EEPROM.h>
 #include <FS.h>
+
+#include <functional>
+#include <list>
+#include <ArduinoJson.h>
+#include <SPIFFS.h>
 
 #if defined(ARDUINO_ARCH_ESP8266) //ESP8266
     #include <ESP8266WiFi.h>
     #include <ESP8266WebServer.h>
 #elif defined(ARDUINO_ARCH_ESP32) //ESP32
-    #include <SPIFFS.h>
     #include <WiFi.h>
     #include <WebServer.h>
 #endif
-
-#include <functional>
-#include <list>
-#include "ArduinoJson.h"
-
-#define WIFI_OFFSET 2
-#define CONFIG_OFFSET 98
 
 #if defined(ARDUINO_ARCH_ESP8266) //ESP8266
     using WebServer = ESP8266WebServer;
 #endif
 
-enum Mode {ap, api};
+#include "Networking.hpp"
 
-enum ParameterMode { get, set, both};
+
+
+
 
 /**
  * Base Parameter
  */
 class BaseParameter {
 public:
+    virtual ~BaseParameter() {}
+    enum ParameterMode {get, set, both};
     virtual ParameterMode getMode() = 0;
     virtual void fromJson(JsonObject *json) = 0;
     virtual void toJson(JsonObject *json) = 0;
@@ -116,19 +116,11 @@ private:
 /**
  * Config Manager
  */
-class ConfigManager {
+class ConfigManager
+{
 public:
-    ConfigManager() {}
+    ConfigManager(WebServer& server, Networking& net);
 
-    Mode getMode();
-    void setAPName(const char *name);
-    void setAPPassword(const char *password);
-    void setAPFilename(const char *filename);
-    void setAPTimeout(const int timeout);
-    void setWifiConnectRetries(const int retries);
-    void setWifiConnectInterval(const int interval);
-    void setAPCallback(std::function<void(WebServer*)> callback);
-    void setAPICallback(std::function<void(WebServer*)> callback);
     void loop();
 
     template<typename T>
@@ -146,39 +138,45 @@ public:
         parameters.push_back(new ConfigParameter<T>(name, variable));
     }
     template<typename T>
-    void addParameter(const char *name, T *variable, ParameterMode mode) {
+    void addParameter(const char *name, T *variable, BaseParameter::ParameterMode mode) {
         parameters.push_back(new ConfigParameter<T>(name, variable, mode));
     }
     void addParameter(const char *name, char *variable, size_t size) {
         parameters.push_back(new ConfigStringParameter(name, variable, size));
     }
-    void addParameter(const char *name, char *variable, size_t size, ParameterMode mode) {
+    void addParameter(const char *name, char *variable, size_t size, BaseParameter::ParameterMode mode) {
         parameters.push_back(new ConfigStringParameter(name, variable, size, mode));
     }
     void save();
 
+
+
 private:
-    Mode mode;
+
     void *config;
     size_t configSize;
 
-    char *apName = (char *)"Thing";
-    char *apPassword = NULL;
-    char *apFilename = (char *)"/index.html";
-    int apTimeout = 0;
-    unsigned long apStart = 0;
-
-    int wifiConnectRetries = 20;
-    int wifiConnectInterval = 500;
-
-    std::unique_ptr<DNSServer> dnsServer;
-    std::unique_ptr<WebServer> server;
+    WebServer& server;
+    Networking& net;
     std::list<BaseParameter*> parameters;
 
-    std::function<void(WebServer*)> apCallback;
-    std::function<void(WebServer*)> apiCallback;
+    static const uint8_t WIFI_OFFSET;
+    static const uint8_t CONFIG_OFFSET;
+
+    static const char magicBytes[]     PROGMEM;
+    static const char mimeHTML[]       PROGMEM;
+    static const char mimeJSON[]       PROGMEM;
+    static const char mimePlain[]      PROGMEM;
+    static const char configHTMLFile[] PROGMEM;
+    static const char apFilename[]     PROGMEM;
 
     JsonObject &decodeJson(String jsonString);
+
+    std::function<void(WebServer&)> apCallback;
+    std::function<void(WebServer&)> apiCallback;
+
+    void setAPCallback(std::function<void(WebServer&)> callback);
+    void setAPICallback(std::function<void(WebServer&)> callback);
 
     void handleAPGet();
     void handleAPPost();
@@ -187,16 +185,15 @@ private:
     void handleJQueryGet();
     void handleJQueryValidateGet();
     void handleNotFound();
+    boolean isIp(String str);
 
-    bool wifiConnected();
+    String toStringIP(IPAddress ip);
     void setup();
-    void startAP();
-    void startApi();
 
     void readConfig();
     void writeConfig();
-    boolean isIp(String str);
-    String toStringIP(IPAddress ip);
+
+    static void createCustomRoute (WebServer& server);
 };
 
 #endif /* __CONFIGMANAGER_H__ */
