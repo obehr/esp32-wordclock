@@ -3,12 +3,9 @@
 
 #include "ClockFace.hpp"
 
+const int ClockFace::DATA_PIN = 13;
 
-const int DATA_PIN = 13;
-const int MATRIXLAYOUT = 1;
-const int ORIENTATION = 1;
-
-const char matrixZiffernblattLayout1[8][8] = 
+const char ClockFace::matrixZiffernblattLayout1[8][8] =
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -20,7 +17,7 @@ const char matrixZiffernblattLayout1[8][8] =
   'x', 'n', 'o', 'c', 'l', 'o', 'c', 'k'
 };
 
-const char matrixZiffernblattLayout2[8][8] = 
+const char ClockFace::matrixZiffernblattLayout2[8][8] =
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -32,7 +29,7 @@ const char matrixZiffernblattLayout2[8][8] =
   'o', 'c', 'l', 'o', 'c', 'k', 'f', 'n'
 };
 
-const char matrixZiffernblattLayout3[8][8] = 
+const char ClockFace::matrixZiffernblattLayout3[8][8] =
 {
   'i', 't', 's', 'o', 'f', 't', 'w', 'e',
   'n', 't', 'y', 'f', 'i', 'v', 'e', 'n',
@@ -43,17 +40,6 @@ const char matrixZiffernblattLayout3[8][8] =
   'u', 'i', 'x', 'e', 't', 'e', 'n', 'e',
   'r', 'n', 'o', 'c', 'l', 'o', 'c', 'k'
 };
-
-CRGBArray<64> matrix;
-
-QList<int> listeAufbau;
-QList<int> listeAbbau;
-QList<int> listeEffekt;
-QList<int> listeNachricht;
-
-uint8_t matrixLeds[8][8];
-uint16_t ledFarbzuweisung[64];
-
 
 struct castedConfig
 {
@@ -71,6 +57,12 @@ struct castedConfig
 
 // Use global variable. It is defined somewhere else (in a .cpp file).
 extern castedConfig validConfig;
+
+ClockFace::ClockFace(int MATRIXLAYOUT, int ORIENTATION) :
+    MATRIXLAYOUT(MATRIXLAYOUT), ORIENTATION(ORIENTATION)
+{
+
+}
 
 void ClockFace::display_setup (void)
 {

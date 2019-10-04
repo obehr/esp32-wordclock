@@ -78,7 +78,10 @@ WebServer server;
 DNSServer dnsServer;
 Networking net(dnsServer);
 ConfigManager configManager(server, net);
-ClockFace cf;
+ClockFace cf (
+    1,  // Matrix layout
+    1   // Orientation
+);
 Wordclock wc(cf);
 
 

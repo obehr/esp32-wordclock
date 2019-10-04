@@ -3,12 +3,12 @@
 const uint8_t ConfigManager::WIFI_OFFSET   = 2;
 const uint8_t ConfigManager::CONFIG_OFFSET = 98;
 
-const char ConfigManager::magicBytes[]     PROGMEM = { 'C', 'M' };
-const char ConfigManager::mimeHTML[]       PROGMEM = "text/html";
-const char ConfigManager::mimeJSON[]       PROGMEM = "application/json";
-const char ConfigManager::mimePlain[]      PROGMEM = "text/plain";
-const char ConfigManager::configHTMLFile[] PROGMEM = "/settings.html";
-const char ConfigManager::apFilename[]     PROGMEM = "/index.html";
+const char ConfigManager::magicBytes[]     = { 'C', 'M' };
+const char ConfigManager::mimeHTML[]       = "text/html";
+const char ConfigManager::mimeJSON[]       = "application/json";
+const char ConfigManager::mimePlain[]      = "text/plain";
+const char ConfigManager::configHTMLFile[] = "/settings.html";
+const char ConfigManager::apFilename[]     = "/index.html";
 
 void ConfigManager::createCustomRoute (WebServer& server)
 {
