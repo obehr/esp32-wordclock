@@ -1,7 +1,7 @@
 #include <FastLED.h>
 #include "QList.h"
 
-#include "display.hpp"
+#include "ClockFace.hpp"
 
 
 const int DATA_PIN = 13;
@@ -57,7 +57,7 @@ uint16_t ledFarbzuweisung[64];
 
 struct castedConfig
 {
-    boolean ntpUse = true;
+    bool ntpUse = true;
     String ntpServer = "fritz.box";
     uint8_t hour = 0;
     uint8_t minute = 0;
@@ -72,7 +72,7 @@ struct castedConfig
 // Use global variable. It is defined somewhere else (in a .cpp file).
 extern castedConfig validConfig;
 
-void display_setup (void)
+void ClockFace::display_setup (void)
 {
     Serial.println ("Init LED Matrix");
     createMatrix (MATRIXLAYOUT);
@@ -80,7 +80,7 @@ void display_setup (void)
     FastLED.addLeds<NEOPIXEL, DATA_PIN> (matrix, 64);
 }
 
-void clearLists (int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
+void ClockFace::clearLists (int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
 {
     if (liste == 0 or liste == -1)
     {
@@ -100,7 +100,7 @@ void clearLists (int liste) //-1 alle; 0,1,2,3 für die jeweilige Liste
     }
 }
 
-void createMatrix (int variante)
+void ClockFace::createMatrix (int variante)
 {
     int x = 8;
     int y = 8;
@@ -143,7 +143,7 @@ void createMatrix (int variante)
     }
 }
 
-void turnMatrix (int orientation)
+void ClockFace::turnMatrix (int orientation)
 {
     if (orientation > 0 and orientation < 4)
     {
@@ -185,7 +185,7 @@ void turnMatrix (int orientation)
 }
 
 
-void reiheWortItsInListe(int liste)
+void ClockFace::reiheWortItsInListe(int liste)
 {
     Serial.println();
     Serial.print("->Wort ITS hinzufuegen: ");
@@ -198,7 +198,7 @@ void reiheWortItsInListe(int liste)
     reiheLedsInListe(wortIts, 3, liste, 1);
 }
 
-void reiheLedsInListe (int wort[][2], int laenge, int liste, int wordLayout)
+void ClockFace::reiheLedsInListe (int wort[][2], int laenge, int liste, int wordLayout)
 {
     Serial.println ();
     Serial.print ("Leds in Liste ");
@@ -234,7 +234,7 @@ void reiheLedsInListe (int wort[][2], int laenge, int liste, int wordLayout)
     Serial.print ("--------------");
 }
 
-void reiheLedInListe (int led, int liste)
+void ClockFace::reiheLedInListe (int led, int liste)
 {
 
     if (liste == 0)
@@ -261,7 +261,7 @@ void reiheLedInListe (int led, int liste)
     }
 }
 
-void reiheDummiesInListe (int anzahl, int liste)
+void ClockFace::reiheDummiesInListe (int anzahl, int liste)
 {
     for (int i = 1; i <= anzahl; i++)
     {
@@ -269,7 +269,7 @@ void reiheDummiesInListe (int anzahl, int liste)
     }
 }
 
-void bearbeiteListe (int modus)
+void ClockFace::bearbeiteListe (int modus)
 {
     if (modus == 1) //schalten
     {
@@ -313,7 +313,7 @@ void bearbeiteListe (int modus)
     }
 }
 
-void iteriereLedsInListe (int liste, int aktion, boolean onebyone, int delay)
+void ClockFace::iteriereLedsInListe (int liste, int aktion, bool onebyone, int delay)
 {
     /*
      Aktion 0: ausschalten
@@ -374,7 +374,7 @@ void iteriereLedsInListe (int liste, int aktion, boolean onebyone, int delay)
     }
 }
 
-void fadeLeds ()
+void ClockFace::fadeLeds ()
 {
     /*
      effektdauert gibt die Anzahl der Schritte an
@@ -394,8 +394,8 @@ void fadeLeds ()
     int offsetAbbau = 10;
     int ledIndexAbbau;
     int i = 0;
-    boolean ausstehenderAufbau = true;
-    boolean ausstehenderAbbau = true;
+    bool ausstehenderAufbau = true;
+    bool ausstehenderAbbau = true;
 
     while (ausstehenderAufbau or ausstehenderAbbau)
     {
@@ -444,7 +444,7 @@ void fadeLeds ()
     }
 }
 
-int berechneHelligkeit (int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, boolean aufbau)
+int ClockFace::berechneHelligkeit (int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, bool aufbau)
 {
     int neueHelligkeit =
                     (aufbau) ? schritt * schrittweite - ledIndex * offset : volleHelligkeit - schritt * schrittweite
@@ -452,7 +452,7 @@ int berechneHelligkeit (int schritt, int ledIndex, int schrittweite, int offset,
     return (neueHelligkeit < 0) ? 0 : (neueHelligkeit > volleHelligkeit) ? volleHelligkeit : neueHelligkeit;
 }
 
-void flashLeds ()
+void ClockFace::flashLeds ()
 {
     //effektdauert gibt die Anzahl der Schritte an
     //delay zwischen den Schritten fix
@@ -509,7 +509,7 @@ void flashLeds ()
     }
 }
 
-void setzeFarbe (uint16_t farbeLeds)
+void ClockFace::setzeFarbe (uint16_t farbeLeds)
 {
     Serial.println ();
     Serial.print ("->Setze Farbe: ");
@@ -523,7 +523,7 @@ void setzeFarbe (uint16_t farbeLeds)
     listeAufbau.clear ();
 }
 
-void reiheStundenInListe (int stunde, int liste, int wordLayout)
+void ClockFace::reiheStundenInListe (int stunde, int liste, int wordLayout)
 {
     if (stunde >= 0 and stunde < 12)
     {
@@ -542,7 +542,7 @@ void reiheStundenInListe (int stunde, int liste, int wordLayout)
     }
 }
 
-void reiheStundenInListeLayout1(int stunde, int liste, int wordlayout) 
+void ClockFace::reiheStundenInListeLayout1(int stunde, int liste, int wordlayout)
 {
   Serial.println();
   Serial.print("->Stunde ");
@@ -686,7 +686,7 @@ void reiheStundenInListeLayout1(int stunde, int liste, int wordlayout)
   }
 }
 
-void reiheStundenInListeLayout2(int stunde, int liste, int wordlayout) 
+void ClockFace::reiheStundenInListeLayout2(int stunde, int liste, int wordlayout)
 {
 
   /*
@@ -841,7 +841,7 @@ void reiheStundenInListeLayout2(int stunde, int liste, int wordlayout)
   }
 }
 
-void reiheStundenInListeLayout3(int stunde, int liste, int wordlayout) 
+void ClockFace::reiheStundenInListeLayout3(int stunde, int liste, int wordlayout)
 {
   /*
   I T S O F T W E
@@ -996,7 +996,7 @@ void reiheStundenInListeLayout3(int stunde, int liste, int wordlayout)
   }
 }
 
-void reiheWortPastInListe(int liste, int wordLayout)
+void ClockFace::reiheWortPastInListe(int liste, int wordLayout)
 {
   Serial.println();
   Serial.print("->Wort Past in Liste ");
@@ -1015,7 +1015,7 @@ void reiheWortPastInListe(int liste, int wordLayout)
   reiheLedsInListe(wortPast, 4, liste, wordLayout);      
 }
 
-void reiheWortToInListe(int liste, int wordLayout)
+void ClockFace::reiheWortToInListe(int liste, int wordLayout)
 {  
   Serial.println();
   Serial.print("->Wort To in Liste ");
@@ -1040,7 +1040,7 @@ void reiheWortToInListe(int liste, int wordLayout)
   }
 }
 
-void reiheWortOclockInListe(int liste,int wordLayout)
+void ClockFace::reiheWortOclockInListe(int liste,int wordLayout)
 {
   Serial.println();
   Serial.print("->Wort OClock in Liste ");
@@ -1062,7 +1062,7 @@ void reiheWortOclockInListe(int liste,int wordLayout)
 }  
 
 
-void reiheMinutenInListe(int nMalFuenf, int liste, int wordLayout) 
+void ClockFace::reiheMinutenInListe(int nMalFuenf, int liste, int wordLayout)
 {
   //0=0, 1=5, 2=10, 3=15, 4=20, 5=25, 6=30, 7=35, 8=40, 9=45, 10=50, 11=55
   Serial.println();
@@ -1139,7 +1139,7 @@ void reiheMinutenInListe(int nMalFuenf, int liste, int wordLayout)
   }
 }
 
-void reihePastOderToInListe(int nMalFuenf, int liste, int wordLayout)
+void ClockFace::reihePastOderToInListe(int nMalFuenf, int liste, int wordLayout)
 {
   //past; to
   //1-5; 6-11
@@ -1152,7 +1152,7 @@ void reihePastOderToInListe(int nMalFuenf, int liste, int wordLayout)
 
 
 
-void reiheWortOnlineInListe(int liste, int wordLayout)
+void ClockFace::reiheWortOnlineInListe(int liste, int wordLayout)
 {  
   if(wordLayout==1)
   {
@@ -1187,7 +1187,7 @@ void reiheWortOnlineInListe(int liste, int wordLayout)
   }
 }
 
-void reiheWortOfflineInListe(int liste, int wordLayout)
+void ClockFace::reiheWortOfflineInListe(int liste, int wordLayout)
 {  
   if(wordLayout==1)
   {
@@ -1225,7 +1225,7 @@ void reiheWortOfflineInListe(int liste, int wordLayout)
   }
 }
 
-void reiheWortWifiInListe(int liste, int wordLayout)
+void ClockFace::reiheWortWifiInListe(int liste, int wordLayout)
 {  
   int wortWifi[4][2] = 
   {

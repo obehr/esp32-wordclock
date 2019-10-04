@@ -1,4 +1,4 @@
-#include <WiFi.h>
+#include <IPAddress.h>
 
 void checkConfig(bool init);
 void checkWifi(bool init);
