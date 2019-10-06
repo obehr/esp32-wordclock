@@ -233,7 +233,7 @@ void checkConfig (bool init)
         itoa (validConfig.bri, config.bri, 10);
     }
 
-    bool tempNtpUse = (0U == strcmp (config.ntpUse, "yes")) && (net.getMode () == Networking::Mode::API);
+    bool tempNtpUse = (0U == strcmp (config.ntpUse, "1")) && (net.getMode () == Networking::Mode::API);
     if (validConfig.ntpUse != tempNtpUse)
     {
         validConfig.ntpUse = tempNtpUse;
