@@ -22,7 +22,7 @@
 #endif
 
 #include "Networking.hpp"
-
+#include "Subject.hpp"
 
 
 
@@ -116,7 +116,7 @@ private:
 /**
  * Config Manager
  */
-class ConfigManager
+class ConfigManager : public Subject
 {
 public:
     ConfigManager(WebServer& server, Networking& net);

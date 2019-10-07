@@ -1,6 +1,7 @@
 #ifndef __CLOCKFACE_H__
 #define __CLOCKFACE_H__
 
+#include <FastLED.h>
 #include "QList.h"
 
 class ClockFace

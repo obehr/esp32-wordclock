@@ -1,6 +1,7 @@
-#include <FastLED.h>
+
 #include "QList.h"
 
+#include "Config.hpp"
 #include "ClockFace.hpp"
 
 const int ClockFace::DATA_PIN = 13;
@@ -41,22 +42,9 @@ const char ClockFace::matrixZiffernblattLayout3[8][8] =
   'r', 'n', 'o', 'c', 'l', 'o', 'c', 'k'
 };
 
-struct castedConfig
-{
-    bool ntpUse = true;
-    String ntpServer = "fritz.box";
-    uint8_t hour = 0;
-    uint8_t minute = 0;
-    uint16_t c1 = 50;
-    uint16_t c2 = 100;
-    uint16_t c3 = 150;
-    uint16_t c4 = 200;
-    uint16_t bri = 100;
-    uint16_t sat = 255;
-};
 
 // Use global variable. It is defined somewhere else (in a .cpp file).
-extern castedConfig validConfig;
+extern Config cfg;
 
 ClockFace::ClockFace(int MATRIXLAYOUT, int ORIENTATION) :
     MATRIXLAYOUT(MATRIXLAYOUT), ORIENTATION(ORIENTATION)
@@ -340,7 +328,7 @@ void ClockFace::iteriereLedsInListe (int liste, int aktion, bool onebyone, int d
         }
         else if (aktion == 1)
         {
-            matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, validConfig.bri);
+            matrix[ledId].setHSV (ledFarbzuweisung[ledId], cfg.cfg_ok.sat, cfg.cfg_ok.bri);
         }
         else if (aktion == 2)
         {
@@ -348,11 +336,11 @@ void ClockFace::iteriereLedsInListe (int liste, int aktion, bool onebyone, int d
         }
         else if (aktion == 3)
         {
-            matrix[ledId].setHSV (96, validConfig.sat, validConfig.bri);
+            matrix[ledId].setHSV (96, cfg.cfg_ok.sat, cfg.cfg_ok.bri);
         }
         else if (aktion == 4)
         {
-            matrix[ledId].setHSV (0, validConfig.sat, validConfig.bri);
+            matrix[ledId].setHSV (0, cfg.cfg_ok.sat, cfg.cfg_ok.bri);
         }
 
         if (onebyone)
@@ -380,7 +368,7 @@ void ClockFace::fadeLeds ()
     int schrittweiteAbbau = 5;
     int aktuelleHelligkeit;
     int neueHelligkeit;
-    int volleHelligkeit = validConfig.bri;
+    int volleHelligkeit = cfg.cfg_ok.bri;
     int ledId;
     int offsetAufbau = 50;
     int offsetAbbau = 10;
@@ -403,7 +391,7 @@ void ClockFace::fadeLeds ()
             ledIndexAbbau = listeAbbau.indexOf (ledId);
             if (ledIndexAbbau == -1)
             {
-                matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                matrix[ledId].setHSV (ledFarbzuweisung[ledId], cfg.cfg_ok.sat, neueHelligkeit);
             }
             else
             {
@@ -412,7 +400,7 @@ void ClockFace::fadeLeds ()
                 if (neueHelligkeit > helligkeitAbbau)
                 {
                     listeAbbau.at (ledIndexAbbau) = -1;
-                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], cfg.cfg_ok.sat, neueHelligkeit);
                 }
             }
         }
@@ -428,7 +416,7 @@ void ClockFace::fadeLeds ()
                 {
                     ausstehenderAbbau = true;
                 }
-                matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                matrix[ledId].setHSV (ledFarbzuweisung[ledId], cfg.cfg_ok.sat, neueHelligkeit);
             }
         }
         FastLED.delay (50);
@@ -451,7 +439,7 @@ void ClockFace::flashLeds ()
     //fade out und fade in passieren gleichzeitig
     //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
 
-    int normaleHelligkeit = validConfig.bri;
+    int normaleHelligkeit = cfg.cfg_ok.bri;
     int maximaleHelligkeit = normaleHelligkeit * 1.5;
     maximaleHelligkeit = (maximaleHelligkeit > 255) ? 255 : maximaleHelligkeit;
     int differenz = maximaleHelligkeit - normaleHelligkeit;
@@ -493,7 +481,7 @@ void ClockFace::flashLeds ()
                 ledId = (int) listeEffekt.at (j);
                 if (ledId != -1)
                 {
-                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], validConfig.sat, neueHelligkeit);
+                    matrix[ledId].setHSV (ledFarbzuweisung[ledId], cfg.cfg_ok.sat, neueHelligkeit);
                 }
             }
         }

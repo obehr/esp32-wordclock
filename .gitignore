@@ -2,3 +2,6 @@
 .settings
 .directory
 
+doc/Model.xmi
+include/
+lib/
