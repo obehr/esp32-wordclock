@@ -8,6 +8,8 @@ const uint16_t DNS_PORT = 53;
 
 Networking::Networking(DNSServer& dnsServer) : dnsServer(dnsServer)
 {
+    Serial.println ("Init class Networking.");
+
     this->mode = Mode::AP;
 }
 

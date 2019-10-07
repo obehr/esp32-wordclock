@@ -1,12 +1,13 @@
 #ifndef __CLOCKFACE_H__
 #define __CLOCKFACE_H__
 
+#include <FastLED.h>
 #include "QList.h"
 
 class ClockFace
 {
 public:
-    ClockFace() {};
+    ClockFace(int MATRIXLAYOUT, int ORIENTATION);
     void display_setup(void);
     void bearbeiteListe(int modus);
     void clearLists(int liste);
@@ -29,15 +30,27 @@ public:
     void setzeFarbe(uint16_t farbeLeds);
     void reiheDummiesInListe(int anzahl, int liste);
 private:
+    static const int DATA_PIN;
+    int MATRIXLAYOUT;
+    int ORIENTATION;
+
+    CRGBArray<64> matrix;
+
+    QList<int> listeAufbau;
+    QList<int> listeAbbau;
+    QList<int> listeEffekt;
+    QList<int> listeNachricht;
+
+    uint8_t matrixLeds[8][8];
+    uint16_t ledFarbzuweisung[64];
+
+    static const char matrixZiffernblattLayout1[8][8];
+    static const char matrixZiffernblattLayout2[8][8];
+    static const char matrixZiffernblattLayout3[8][8];
 
     void createMatrix(int variante);
-
     void turnMatrix(int orientation);
-
-
-
     void reiheLedInListe(int led, int liste);
-
     int berechneHelligkeit(int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, bool aufbau);
     void fadeLeds();
     void flashLeds();

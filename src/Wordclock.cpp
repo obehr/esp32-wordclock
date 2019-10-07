@@ -1,11 +1,11 @@
 
+#include <time.h>
 #include <HardwareSerial.h>
-#include <FastLED.h>
 #include "Wordclock.hpp"
 #include "ClockFace.hpp"
-#include "time.h"
 
-extern tm timeinfo;
+struct tm timeinfo;
+
 
 String wordsMinute[12] =
     { "oclock", "five past", "ten past", "fifteen past", "twenty past", "twentyfive past", "half past", "twentyfive to",
@@ -16,36 +16,45 @@ String wordsHour[12] =
 int letzteMinute;
 int letzteStunde;
 
-struct castedConfig
-{
-    bool ntpUse = true;
-    String ntpServer = "fritz.box";
-    uint8_t hour = 0;
-    uint8_t minute = 0;
-    uint16_t c1 = 50;
-    uint16_t c2 = 100;
-    uint16_t c3 = 150;
-    uint16_t c4 = 200;
-    uint16_t bri = 100;
-    uint16_t sat = 255;
-};
-
-extern castedConfig validConfig;
-const int WORDLAYOUT = 1;
-
 uint16_t countdown;
 uint8_t countdown2;
 
-Wordclock::Wordclock(ClockFace& cf) : cf(cf)
+Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg, uint8_t Wordlayout) :
+    net(net),
+    cf(cf),
+    cfg(cfg),
+    Wordlayout(Wordlayout),
+    lastTimeDisplayed(-1),
+    currentHour(0),
+    currentMinute(0),
+    lastMinute(-1),
+    wifiVerbunden(false),
+    inAPMode(false),
+    ntpZuletztVerwendet(false)
 {
+    Serial.println ("Init class Wordclock.");
+
     letzteStunde = -1;
-        letzteMinute = -1;
+    letzteMinute = -1;
     countdown = 0;
     countdown2 = 0;
+
+
+}
+
+void Wordclock::notify()
+{
+    //this->checkConfig(false);
+    //this->checkWifi(false);
 }
 
 void Wordclock::loop()
 {
+    // This still needs to be in the Wordclock loop. Leave it here for the moment.
+    // Both methods need to be reworked anyway.
+    this->checkConfig(false);
+    this->checkWifi(false);
+
     // Periodically
     // a) Flash LEDs every ~ 1*countdown milliseconds
     // b) Update time every ~ 1*countdown*countdown2 milliseconds
@@ -131,41 +140,41 @@ void Wordclock::loop()
 
                 if (letzteMinute > 0)
                 {
-                    cf.reiheMinutenInListe (letzteMinute, 0, WORDLAYOUT);
-                    cf.reihePastOderToInListe (letzteMinute, 0, WORDLAYOUT);
+                    cf.reiheMinutenInListe (letzteMinute, 0, Wordlayout);
+                    cf.reihePastOderToInListe (letzteMinute, 0, Wordlayout);
                 }
 
                 if (tempMinute > 0)
                 {
-                    cf.reiheMinutenInListe (tempMinute, 1, WORDLAYOUT);
-                    cf.reiheMinutenInListe (tempMinute, 2, WORDLAYOUT);
+                    cf.reiheMinutenInListe (tempMinute, 1, Wordlayout);
+                    cf.reiheMinutenInListe (tempMinute, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
-                    cf.reihePastOderToInListe (tempMinute, 1, WORDLAYOUT);
-                    cf.reihePastOderToInListe (tempMinute, 2, WORDLAYOUT);
+                    cf.reihePastOderToInListe (tempMinute, 1, Wordlayout);
+                    cf.reihePastOderToInListe (tempMinute, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
                 }
 
                 if (letzteStunde != -1)
                 {
-                    cf.reiheStundenInListe (letzteStunde, 0, WORDLAYOUT);
+                    cf.reiheStundenInListe (letzteStunde, 0, Wordlayout);
                 }
 
                 if (tempHour != -1)
                 {
-                    cf.reiheStundenInListe (tempHour, 1, WORDLAYOUT);
-                    cf.reiheStundenInListe (tempHour, 2, WORDLAYOUT);
+                    cf.reiheStundenInListe (tempHour, 1, Wordlayout);
+                    cf.reiheStundenInListe (tempHour, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
                 }
 
                 if (letzteMinute == 0)
                 {
-                    cf.reiheWortOclockInListe (0, WORDLAYOUT);
+                    cf.reiheWortOclockInListe (0, Wordlayout);
                 }
 
                 if (tempMinute == 0)
                 {
-                    cf.reiheWortOclockInListe (1, WORDLAYOUT);
-                    cf.reiheWortOclockInListe (2, WORDLAYOUT);
+                    cf.reiheWortOclockInListe (1, Wordlayout);
+                    cf.reiheWortOclockInListe (2, Wordlayout);
                 }
 
                 cf.bearbeiteListe (2);
@@ -188,48 +197,48 @@ void Wordclock::setzeFarben ()
 {
     Serial.println ();
     Serial.print ("Setze Farben: ");
-    Serial.print (validConfig.c1);
+    Serial.print (cfg.cfg_ok.c1);
     Serial.print (", ");
-    Serial.print (validConfig.c2);
+    Serial.print (cfg.cfg_ok.c2);
     Serial.print (", ");
-    Serial.print (validConfig.c3);
+    Serial.print (cfg.cfg_ok.c3);
     Serial.print (", ");
-    Serial.print (validConfig.c4);
+    Serial.print (cfg.cfg_ok.c4);
 
     cf.reiheWortItsInListe (1);
-    cf.setzeFarbe (validConfig.c1);
+    cf.setzeFarbe (cfg.cfg_ok.c1);
     for (int i = 1; i < 12; i++)
     {
-        cf.reiheMinutenInListe (i, 1, WORDLAYOUT);
+        cf.reiheMinutenInListe (i, 1, Wordlayout);
     }
-    cf.setzeFarbe (validConfig.c2);
+    cf.setzeFarbe (cfg.cfg_ok.c2);
     for (int i = 0; i < 12; i++)
     {
-        cf.reiheStundenInListe (i, 1, WORDLAYOUT);
+        cf.reiheStundenInListe (i, 1, Wordlayout);
     }
-    cf.setzeFarbe (validConfig.c4);
-    cf.reiheWortPastInListe (1, WORDLAYOUT);
-    cf.setzeFarbe (validConfig.c3);
-    cf.reiheWortToInListe (1, WORDLAYOUT);
-    cf.setzeFarbe (validConfig.c3);
-    cf.reiheWortOclockInListe (1, WORDLAYOUT);
-    cf.setzeFarbe (validConfig.c1);
+    cf.setzeFarbe (cfg.cfg_ok.c4);
+    cf.reiheWortPastInListe (1, Wordlayout);
+    cf.setzeFarbe (cfg.cfg_ok.c3);
+    cf.reiheWortToInListe (1, Wordlayout);
+    cf.setzeFarbe (cfg.cfg_ok.c3);
+    cf.reiheWortOclockInListe (1, Wordlayout);
+    cf.setzeFarbe (cfg.cfg_ok.c1);
 }
 
 void Wordclock::zeigeNachrichtOk ()
 {
     cf.bearbeiteListe (7);
     int offsetLayout = 0;
-    if (WORDLAYOUT == 2)
+    if (Wordlayout == 2)
     {
         offsetLayout = 2;
     }
 
     int wortOk[2][2] =
         { 5 - offsetLayout, 7, 7 - offsetLayout, 7 };
-    cf.reiheLedsInListe (wortOk, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortOk, 2, 3, Wordlayout);
     cf.bearbeiteListe (4);
-    FastLED.delay (2000);
+    delay (2000);
     cf.bearbeiteListe (6);
     cf.bearbeiteListe (8);
 }
@@ -238,24 +247,24 @@ void Wordclock::zeigePasswort ()
 {
     cf.bearbeiteListe (7);
     int offsetLayout = 0;
-    if (WORDLAYOUT == 3)
+    if (Wordlayout == 3)
     {
         offsetLayout = 1;
     }
 
     int wortPW[2][2] =
         { 4, 2, 4 + offsetLayout, 3, };
-    cf.reiheLedsInListe (wortPW, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortPW, 2, 3, Wordlayout);
     cf.bearbeiteListe (5);
-    FastLED.delay (1000);
+    delay (1000);
     cf.clearLists (3);
 
     int wortSechsteZeile[10][2] =
         { 0, 5, 1, 5, 2, 5, 3, 5, 4, 5, 5, 5, 6, 5, 7, 5 };
-    cf.reiheLedsInListe (wortSechsteZeile, 8, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortSechsteZeile, 8, 3, Wordlayout);
     cf.bearbeiteListe (4);
-    FastLED.delay (10000);
-    cf.reiheLedsInListe (wortPW, 8, 3, WORDLAYOUT);
+    delay (10000);
+    cf.reiheLedsInListe (wortPW, 8, 3, Wordlayout);
     cf.bearbeiteListe (6);
     cf.bearbeiteListe (8);
 }
@@ -268,9 +277,9 @@ void Wordclock::zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
 
     int wortIP[2][2] =
         { 4, 1, 4, 2 };
-    cf.reiheLedsInListe (wortIP, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortIP, 2, 3, Wordlayout);
     cf.bearbeiteListe (5);
-    FastLED.delay (2000);
+    delay (2000);
     cf.bearbeiteListe (6);
 
     for (int i = startOktett; i <= endeOktett; i++)
@@ -287,16 +296,16 @@ void Wordclock::zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
             Serial.print (ziffer);
             if (ziffer > 0 && ziffer <= 9)
             {
-                cf.reiheStundenInListe (ziffer, 3, WORDLAYOUT);
+                cf.reiheStundenInListe (ziffer, 3, Wordlayout);
                 cf.bearbeiteListe (4);
-                FastLED.delay (500);
+                delay (500);
                 cf.bearbeiteListe (6);
             }
             else if (ziffer == 0)
             {
-                cf.reiheStundenInListe (10, 3, WORDLAYOUT);
+                cf.reiheStundenInListe (10, 3, Wordlayout);
                 cf.bearbeiteListe (4);
-                FastLED.delay (500);
+                delay (500);
                 cf.bearbeiteListe (6);
             }
             else
@@ -304,5 +313,245 @@ void Wordclock::zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
                 break;  //Ende der Zahl
             }
         }
+    }
+}
+
+void Wordclock::checkConfig (bool init)
+{
+    bool changeColor = false;
+    bool changeTimeCfg = false;
+    bool changeTime = false;
+
+    int tempInt = atoi (cfg.cfg_raw.c1);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.c1 != tempInt)
+        {
+            cfg.cfg_ok.c1 = tempInt;
+            changeColor = true;
+            Serial.println ("Color 1 changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.c1, cfg.cfg_raw.c1, 10);
+    }
+
+    tempInt = atoi (cfg.cfg_raw.c2);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.c2 != tempInt)
+        {
+            cfg.cfg_ok.c2 = tempInt;
+            changeColor = true;
+            Serial.println ("Color 2 changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.c2, cfg.cfg_raw.c2, 10);
+    }
+
+    tempInt = atoi (cfg.cfg_raw.c3);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.c3 != tempInt)
+        {
+            cfg.cfg_ok.c3 = tempInt;
+            changeColor = true;
+            Serial.println ("Color 3 changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.c3, cfg.cfg_raw.c3, 10);
+    }
+
+    tempInt = atoi (cfg.cfg_raw.c4);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.c4 != tempInt)
+        {
+            cfg.cfg_ok.c4 = tempInt;
+            changeColor = true;
+            Serial.println ("Color 4 changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.c4, cfg.cfg_raw.c4, 10);
+    }
+
+    tempInt = atoi (cfg.cfg_raw.sat);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.sat != tempInt)
+        {
+            cfg.cfg_ok.sat = tempInt;
+            changeColor = true;
+            Serial.println ("Saturation changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.sat, cfg.cfg_raw.sat, 10);
+    }
+
+    tempInt = atoi (cfg.cfg_raw.bri);
+    if (tempInt >= 0 && tempInt < 256)
+    {
+        if (cfg.cfg_ok.bri != tempInt)
+        {
+            cfg.cfg_ok.bri = tempInt;
+            changeColor = true;
+            Serial.println ("Brightness changed");
+        }
+    }
+    else
+    {
+        itoa (cfg.cfg_ok.bri, cfg.cfg_raw.bri, 10);
+    }
+
+    bool tempNtpUse = (0U == strcmp (cfg.cfg_raw.ntpUse, "yes")) && (net.getMode () == Networking::Mode::API);
+    if (cfg.cfg_ok.ntpUse != tempNtpUse)
+    {
+        cfg.cfg_ok.ntpUse = tempNtpUse;
+        changeTimeCfg = true;
+        Serial.println ("ntpUse changed");
+    }
+
+    if (cfg.cfg_ok.ntpUse)
+    {
+        if ((0U != strcmp(cfg.cfg_raw.ntpServer, ntpServer)) && (0U != strcmp(cfg.cfg_raw.ntpServer, "")))
+        {
+            // String changed and is not empty
+            ntpServer = cfg.cfg_raw.ntpServer;
+            changeTimeCfg = true;
+            Serial.println ("ntpServer changed");
+        }
+    }
+
+    if ((changeColor or changeTimeCfg) && !init)
+    {
+        Serial.println ("Colors or TimeCfg updated");
+        zeigeNachrichtOk ();
+        countdown2 = 0;
+    }
+
+    if (changeTimeCfg or init)
+    {
+        Serial.print ("Activate NTP");
+        WiFi.config (0U, 0U, 0U);
+        delay (5000);
+        //cm.startAPI();
+        configTime (gmtOffset_sec, daylightOffset_sec, "fritz.box");
+        setenv ("TZ", "CET-1CEST,M3.5.0/02,M10.5.0/03", 1);
+        getLocalTime (&timeinfo);
+        ntpZuletztVerwendet = true;
+    }
+
+    if (!cfg.cfg_ok.ntpUse)
+    {
+        tempInt = atoi (cfg.cfg_raw.hour);
+        if (tempInt >= 0 && tempInt < 24)
+        {
+            if (cfg.cfg_ok.hour != tempInt)
+            {
+                cfg.cfg_ok.hour = tempInt;
+                changeTime = true;
+                Serial.println ();
+                Serial.print ("hour changed to ");
+                Serial.print (cfg.cfg_ok.hour);
+            }
+        }
+        else
+        {
+            itoa (cfg.cfg_ok.hour, cfg.cfg_raw.hour, 10);
+        }
+
+        tempInt = atoi (cfg.cfg_raw.minute);
+        if (tempInt >= 0 && tempInt < 24)
+        {
+            if (cfg.cfg_ok.minute != tempInt)
+            {
+                cfg.cfg_ok.minute = tempInt;
+                changeTime = true;
+                Serial.println ();
+                Serial.print ("minute changed to ");
+                Serial.print (cfg.cfg_ok.minute);
+            }
+        }
+        else
+        {
+            itoa (cfg.cfg_ok.minute, cfg.cfg_raw.minute, 10);
+        }
+    }
+
+    if (changeColor or init)
+    {
+        setzeFarben ();
+    }
+
+    if (changeTime)
+    {
+        if (!init)
+        {
+            zeigeNachrichtOk ();
+            countdown2 = 0;
+        }
+        if (!ntpZuletztVerwendet)
+        {
+            configTime (0, daylightOffset_sec, ntpServer);
+        }
+        getLocalTime (&timeinfo);
+        long currentTime = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60;
+        if (ntpZuletztVerwendet)
+        {
+            currentTime -= daylightOffset_sec;
+        }
+        long newTime = cfg.cfg_ok.hour * 3600 + cfg.cfg_ok.minute * 60;
+
+        configTime (newTime - currentTime, daylightOffset_sec, ntpServer);
+        ntpZuletztVerwendet = false;
+    }
+}
+
+
+void Wordclock::checkWifi (bool init)
+{
+    bool inAPModeAktuell = net.getMode () == Networking::Mode::AP;
+    bool wifiAktuell = WiFi.status () == WL_CONNECTED;
+    if (init or wifiAktuell != wifiVerbunden or inAPModeAktuell != inAPMode)
+    {
+        wifiVerbunden = wifiAktuell;
+        inAPMode = inAPModeAktuell;
+        cf.bearbeiteListe (7);
+        if (inAPMode)
+        {
+            cf.reiheWortWifiInListe (3, Wordlayout);
+            cf.bearbeiteListe (4);
+            delay (2000);
+            cf.bearbeiteListe (6);
+            zeigePasswort ();
+            IPAddress local = WiFi.softAPIP ();
+            zeigeIPAdresse (local, 0, 3);
+        }
+        else if (wifiVerbunden)
+        {
+            cf.reiheWortOnlineInListe (3, Wordlayout);
+            cf.bearbeiteListe (4);
+            delay (2000);
+            cf.bearbeiteListe (6);
+            IPAddress local = WiFi.localIP ();
+            zeigeIPAdresse (local, 3, 3);
+        }
+        else if (!wifiVerbunden)
+        {
+            cf.reiheWortOfflineInListe (3, Wordlayout);
+            cf.bearbeiteListe (5);
+            delay (2000);
+            cf.bearbeiteListe (6);
+        }
+        cf.bearbeiteListe (8);
     }
 }
