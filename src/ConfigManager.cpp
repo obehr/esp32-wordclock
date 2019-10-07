@@ -33,6 +33,8 @@ void ConfigManager::createCustomRoute (WebServer& server)
 
 ConfigManager::ConfigManager(WebServer& server, Networking& net) : server(server), net(net)
 {
+    Serial.println ("Init class ConfigManager.");
+
     config = 0;
     configSize = 0;
 

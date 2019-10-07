@@ -49,7 +49,7 @@ extern Config cfg;
 ClockFace::ClockFace(int MATRIXLAYOUT, int ORIENTATION) :
     MATRIXLAYOUT(MATRIXLAYOUT), ORIENTATION(ORIENTATION)
 {
-
+    Serial.println ("Init class ClockFace.");
 }
 
 void ClockFace::display_setup (void)

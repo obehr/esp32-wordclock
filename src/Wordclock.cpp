@@ -16,15 +16,14 @@ String wordsHour[12] =
 int letzteMinute;
 int letzteStunde;
 
-const int WORDLAYOUT = 1;
-
 uint16_t countdown;
 uint8_t countdown2;
 
-Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg) :
+Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg, uint8_t Wordlayout) :
     net(net),
     cf(cf),
     cfg(cfg),
+    Wordlayout(Wordlayout),
     lastTimeDisplayed(-1),
     currentHour(0),
     currentMinute(0),
@@ -33,16 +32,20 @@ Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg) :
     inAPMode(false),
     ntpZuletztVerwendet(false)
 {
+    Serial.println ("Init class Wordclock.");
+
     letzteStunde = -1;
     letzteMinute = -1;
     countdown = 0;
     countdown2 = 0;
+
+
 }
 
 void Wordclock::notify()
 {
-    this->checkConfig(false);
-    this->checkWifi(false);
+    //this->checkConfig(false);
+    //this->checkWifi(false);
 }
 
 void Wordclock::loop()
@@ -137,41 +140,41 @@ void Wordclock::loop()
 
                 if (letzteMinute > 0)
                 {
-                    cf.reiheMinutenInListe (letzteMinute, 0, WORDLAYOUT);
-                    cf.reihePastOderToInListe (letzteMinute, 0, WORDLAYOUT);
+                    cf.reiheMinutenInListe (letzteMinute, 0, Wordlayout);
+                    cf.reihePastOderToInListe (letzteMinute, 0, Wordlayout);
                 }
 
                 if (tempMinute > 0)
                 {
-                    cf.reiheMinutenInListe (tempMinute, 1, WORDLAYOUT);
-                    cf.reiheMinutenInListe (tempMinute, 2, WORDLAYOUT);
+                    cf.reiheMinutenInListe (tempMinute, 1, Wordlayout);
+                    cf.reiheMinutenInListe (tempMinute, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
-                    cf.reihePastOderToInListe (tempMinute, 1, WORDLAYOUT);
-                    cf.reihePastOderToInListe (tempMinute, 2, WORDLAYOUT);
+                    cf.reihePastOderToInListe (tempMinute, 1, Wordlayout);
+                    cf.reihePastOderToInListe (tempMinute, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
                 }
 
                 if (letzteStunde != -1)
                 {
-                    cf.reiheStundenInListe (letzteStunde, 0, WORDLAYOUT);
+                    cf.reiheStundenInListe (letzteStunde, 0, Wordlayout);
                 }
 
                 if (tempHour != -1)
                 {
-                    cf.reiheStundenInListe (tempHour, 1, WORDLAYOUT);
-                    cf.reiheStundenInListe (tempHour, 2, WORDLAYOUT);
+                    cf.reiheStundenInListe (tempHour, 1, Wordlayout);
+                    cf.reiheStundenInListe (tempHour, 2, Wordlayout);
                     cf.reiheDummiesInListe (3, 2);
                 }
 
                 if (letzteMinute == 0)
                 {
-                    cf.reiheWortOclockInListe (0, WORDLAYOUT);
+                    cf.reiheWortOclockInListe (0, Wordlayout);
                 }
 
                 if (tempMinute == 0)
                 {
-                    cf.reiheWortOclockInListe (1, WORDLAYOUT);
-                    cf.reiheWortOclockInListe (2, WORDLAYOUT);
+                    cf.reiheWortOclockInListe (1, Wordlayout);
+                    cf.reiheWortOclockInListe (2, Wordlayout);
                 }
 
                 cf.bearbeiteListe (2);
@@ -206,19 +209,19 @@ void Wordclock::setzeFarben ()
     cf.setzeFarbe (cfg.cfg_ok.c1);
     for (int i = 1; i < 12; i++)
     {
-        cf.reiheMinutenInListe (i, 1, WORDLAYOUT);
+        cf.reiheMinutenInListe (i, 1, Wordlayout);
     }
     cf.setzeFarbe (cfg.cfg_ok.c2);
     for (int i = 0; i < 12; i++)
     {
-        cf.reiheStundenInListe (i, 1, WORDLAYOUT);
+        cf.reiheStundenInListe (i, 1, Wordlayout);
     }
     cf.setzeFarbe (cfg.cfg_ok.c4);
-    cf.reiheWortPastInListe (1, WORDLAYOUT);
+    cf.reiheWortPastInListe (1, Wordlayout);
     cf.setzeFarbe (cfg.cfg_ok.c3);
-    cf.reiheWortToInListe (1, WORDLAYOUT);
+    cf.reiheWortToInListe (1, Wordlayout);
     cf.setzeFarbe (cfg.cfg_ok.c3);
-    cf.reiheWortOclockInListe (1, WORDLAYOUT);
+    cf.reiheWortOclockInListe (1, Wordlayout);
     cf.setzeFarbe (cfg.cfg_ok.c1);
 }
 
@@ -226,14 +229,14 @@ void Wordclock::zeigeNachrichtOk ()
 {
     cf.bearbeiteListe (7);
     int offsetLayout = 0;
-    if (WORDLAYOUT == 2)
+    if (Wordlayout == 2)
     {
         offsetLayout = 2;
     }
 
     int wortOk[2][2] =
         { 5 - offsetLayout, 7, 7 - offsetLayout, 7 };
-    cf.reiheLedsInListe (wortOk, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortOk, 2, 3, Wordlayout);
     cf.bearbeiteListe (4);
     delay (2000);
     cf.bearbeiteListe (6);
@@ -244,24 +247,24 @@ void Wordclock::zeigePasswort ()
 {
     cf.bearbeiteListe (7);
     int offsetLayout = 0;
-    if (WORDLAYOUT == 3)
+    if (Wordlayout == 3)
     {
         offsetLayout = 1;
     }
 
     int wortPW[2][2] =
         { 4, 2, 4 + offsetLayout, 3, };
-    cf.reiheLedsInListe (wortPW, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortPW, 2, 3, Wordlayout);
     cf.bearbeiteListe (5);
     delay (1000);
     cf.clearLists (3);
 
     int wortSechsteZeile[10][2] =
         { 0, 5, 1, 5, 2, 5, 3, 5, 4, 5, 5, 5, 6, 5, 7, 5 };
-    cf.reiheLedsInListe (wortSechsteZeile, 8, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortSechsteZeile, 8, 3, Wordlayout);
     cf.bearbeiteListe (4);
     delay (10000);
-    cf.reiheLedsInListe (wortPW, 8, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortPW, 8, 3, Wordlayout);
     cf.bearbeiteListe (6);
     cf.bearbeiteListe (8);
 }
@@ -274,7 +277,7 @@ void Wordclock::zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
 
     int wortIP[2][2] =
         { 4, 1, 4, 2 };
-    cf.reiheLedsInListe (wortIP, 2, 3, WORDLAYOUT);
+    cf.reiheLedsInListe (wortIP, 2, 3, Wordlayout);
     cf.bearbeiteListe (5);
     delay (2000);
     cf.bearbeiteListe (6);
@@ -293,14 +296,14 @@ void Wordclock::zeigeIPAdresse (IPAddress ip, int startOktett, int endeOktett)
             Serial.print (ziffer);
             if (ziffer > 0 && ziffer <= 9)
             {
-                cf.reiheStundenInListe (ziffer, 3, WORDLAYOUT);
+                cf.reiheStundenInListe (ziffer, 3, Wordlayout);
                 cf.bearbeiteListe (4);
                 delay (500);
                 cf.bearbeiteListe (6);
             }
             else if (ziffer == 0)
             {
-                cf.reiheStundenInListe (10, 3, WORDLAYOUT);
+                cf.reiheStundenInListe (10, 3, Wordlayout);
                 cf.bearbeiteListe (4);
                 delay (500);
                 cf.bearbeiteListe (6);
@@ -525,7 +528,7 @@ void Wordclock::checkWifi (bool init)
         cf.bearbeiteListe (7);
         if (inAPMode)
         {
-            cf.reiheWortWifiInListe (3, WORDLAYOUT);
+            cf.reiheWortWifiInListe (3, Wordlayout);
             cf.bearbeiteListe (4);
             delay (2000);
             cf.bearbeiteListe (6);
@@ -535,7 +538,7 @@ void Wordclock::checkWifi (bool init)
         }
         else if (wifiVerbunden)
         {
-            cf.reiheWortOnlineInListe (3, WORDLAYOUT);
+            cf.reiheWortOnlineInListe (3, Wordlayout);
             cf.bearbeiteListe (4);
             delay (2000);
             cf.bearbeiteListe (6);
@@ -544,7 +547,7 @@ void Wordclock::checkWifi (bool init)
         }
         else if (!wifiVerbunden)
         {
-            cf.reiheWortOfflineInListe (3, WORDLAYOUT);
+            cf.reiheWortOfflineInListe (3, Wordlayout);
             cf.bearbeiteListe (5);
             delay (2000);
             cf.bearbeiteListe (6);

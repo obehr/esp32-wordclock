@@ -12,10 +12,9 @@ struct Metadata
 Config::Config(ConfigManager& cm) :
     cm(cm)
 {
+    Serial.println ("Init class Config.");
+
     meta.version = 3; //ConfigManagaer
-
-    Serial.println ("Init ConfigManager");
-
 
     cm.addParameter ("hour", cfg_raw.hour, 10);
     cm.addParameter ("minute", cfg_raw.minute, 10);
@@ -29,10 +28,6 @@ Config::Config(ConfigManager& cm) :
     cm.addParameter ("bri", cfg_raw.bri, 10);
     cm.addParameter ("enabled", &cfg_raw.enabled);
     cm.addParameter ("version", &meta.version, BaseParameter::ParameterMode::get);
-
-
-
-    Serial.println ("Init Colors");
 }
 
 

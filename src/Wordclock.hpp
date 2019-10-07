@@ -10,7 +10,7 @@
 class Wordclock : public Observer
 {
 public:
-    Wordclock(Networking& net, ClockFace& cf, Config& cfg);
+    Wordclock(Networking& net, ClockFace& cf, Config& cfg, uint8_t Wordlayout);
 
     /**
      * Implement method from abstract class Observer.
@@ -32,6 +32,8 @@ private:
     ClockFace& cf;
     // Reference to Config
     Config& cfg;
+
+    int Wordlayout;
 
     const char *ntpServer = "fritz.box";
 
