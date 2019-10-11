@@ -321,7 +321,44 @@ void Wordclock::checkConfig (bool init)
     bool changeColor = false;
     bool changeTimeCfg = false;
     bool changeTime = false;
+    bool changeWifiMode = false;
+	bool changeWifiCfg = false;
 
+	bool tempWifiConnect = (0U == strcmp (cfg.cfg_raw.wifiConnect, "1"));
+	if (cfg.cfg_ok.wifiConnect != tempWifiConnect)
+	{
+		cfg.cfg_ok.wifiConnect = tempWifiConnect;
+		changeWifiMode = true;
+		Serial.println ("wifiConnect changed");
+	}
+
+	if (cfg.cfg_ok.wifiConnect)
+	{
+		//client mode set
+		if ((0U == cfg.cfg_ok.ssid.equals(cfg.cfg_raw.ssid)) && (0U != strcmp(cfg.cfg_raw.ssid, "")))
+		{
+			// String changed and is not empty
+			cfg.cfg_ok.ssid = cfg.cfg_raw.ssid;
+			changeWifiCfg = true;
+			Serial.println ("ssid changed");
+		}
+
+		if ((0U == cfg.cfg_ok.password.equals(cfg.cfg_raw.password)) && (0U != strcmp(cfg.cfg_raw.password, "")))
+		{
+			// String changed and is not empty
+			cfg.cfg_ok.password = cfg.cfg_raw.password;
+			changeWifiCfg = true;
+			Serial.println ("ssid changed");
+		}
+	}
+	else
+	{
+		//ap mode set
+
+	}
+
+
+//check colors
     int tempInt = atoi (cfg.cfg_raw.c1);
     if (tempInt >= 0 && tempInt < 256)
     {
@@ -412,7 +449,7 @@ void Wordclock::checkConfig (bool init)
         itoa (cfg.cfg_ok.bri, cfg.cfg_raw.bri, 10);
     }
 
-    bool tempNtpUse = (0U == strcmp (cfg.cfg_raw.ntpUse, "yes")) && (net.getMode () == Networking::Mode::API);
+    bool tempNtpUse = cfg.cfg_ok.wifiConnect && (0U == strcmp (cfg.cfg_raw.ntpUse, "1")) && (net.getMode () == Networking::Mode::API);
     if (cfg.cfg_ok.ntpUse != tempNtpUse)
     {
         cfg.cfg_ok.ntpUse = tempNtpUse;
@@ -440,18 +477,30 @@ void Wordclock::checkConfig (bool init)
 
     if (changeTimeCfg or init)
     {
-        Serial.print ("Activate NTP");
-        WiFi.config (0U, 0U, 0U);
-        delay (5000);
-        //cm.startAPI();
-        configTime (gmtOffset_sec, daylightOffset_sec, "fritz.box");
-        setenv ("TZ", "CET-1CEST,M3.5.0/02,M10.5.0/03", 1);
-        getLocalTime (&timeinfo);
-        ntpZuletztVerwendet = true;
+    	if (!cfg.cfg_ok.ntpUse)
+    	{
+			Serial.print ("Activate NTP");
+			WiFi.config (0U, 0U, 0U);
+			delay (5000);
+			//cm.startAPI();
+			configTime (gmtOffset_sec, daylightOffset_sec, "fritz.box");
+			setenv ("TZ", "CET-1CEST,M3.5.0/02,M10.5.0/03", 1);
+			getLocalTime (&timeinfo);
+			ntpZuletztVerwendet = true;
+    	}
+    	else
+		{
+		  Serial.print("Deactivate NTP");
+		  IPAddress ip=WiFi.localIP();
+		  IPAddress gwip=(0,0,0,0);
+		  IPAddress subnet=(255,255,255,0);
+		  WiFi.config(ip,gwip,subnet);
+		}
     }
 
     if (!cfg.cfg_ok.ntpUse)
     {
+    	//manual time settings
         tempInt = atoi (cfg.cfg_raw.hour);
         if (tempInt >= 0 && tempInt < 24)
         {

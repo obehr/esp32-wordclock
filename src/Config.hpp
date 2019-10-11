@@ -21,6 +21,9 @@ public:
         bool enabled;
         char ntpServer[20];
         char ntpUse[10];
+        char wifiConnect[10];
+		char ssid[32];
+		char password[64];
         char hour[10];
         char minute[10];
         char c1[10];
@@ -37,7 +40,10 @@ public:
     struct castedConfig
     {
         bool ntpUse = true;
+        bool wifiConnect = false;
         String ntpServer = "fritz.box";
+        String ssid = "test";
+		String password = "test test";
         uint8_t hour = 0;
         uint8_t minute = 0;
         uint16_t c1 = 50;

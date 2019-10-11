@@ -19,15 +19,15 @@ Networking      net(dnsServer);
 ConfigManager   configManager(server, net);
 Config          cfg(configManager);
 ClockFace       cf(MATRIXLAYOUT, ORIENTATION);
-Wordclock       wc(net, cf, cfg, WORDLAYOUT);
+Wordclock       wrdclck(net, cf, cfg, WORDLAYOUT);
 
 void setup ()
 {
     Serial.println ("Start main setup.");
 
     // Load config defaults
-    wc.checkConfig (true);
-    wc.checkWifi (true);
+    wrdclck.checkConfig (true);
+    wrdclck.checkWifi (true);
 
     // Init display
     cf.display_setup ();
@@ -44,7 +44,7 @@ void setup ()
     net.setAPPassword ((WORDLAYOUT == 1) ? passwort1 : (WORDLAYOUT == 2) ? passwort2 : passwort3);
 
     // Attach Wordclock as observer to observed subject ConfigManager
-    configManager.attach(wc);
+    configManager.attach(wrdclck);
 
     // Load config from EEPROM
     configManager.begin (cfg.cfg_raw);
@@ -68,7 +68,7 @@ void loop ()
     dnsServer.processNextRequest ();
 
     // Wordclock loop
-    wc.loop();
+    wrdclck.loop();
 
     // Idle 1 ms to reduce power consumption
     delay (1);

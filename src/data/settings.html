@@ -1,236 +1,1183 @@
+<!DOCTYPE html>
+
 <html lang="en">
+
   <head>
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <script src="jquery-3.4.1.min.js"></script>
+
     <script src="jquery-1.1.9.1.validate.min.js"></script>
+
     <style>
+
       body {
+
         color: #434343; 
+
         font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+
         font-size: 14px;
+
         line-height: 1.42857142857143;
+
         padding: 20px;
+
       }
+
       .container {
+
         margin: 0 auto;
-        max-width: 400px;
+
+        max-width: 600px;
+
       }
+
       form .error {
+
         color: #8A1F11 !important;
+
         border-color: #8A1F11;
+
       }
+
       label.error {
+
         text-transform: none
+
       }
+
       p.error {
+
         margin-bottom: 10px
+
       }
+
       p.inline-errors, p.error {
+
         background: none
+
           border-color: none
+
         border: none
+
         clear: both
+
         font-size: 12px
+
       }
+
       form .field-group {
+
         box-sizing: border-box;
+
         clear: both;
+
         padding: 4px 0;
+
         position: relative;
+
         margin: 1px 0;
+
         width: 100%;
+
       }
+
       form .field-group > label {
+
         color: #757575;
+
         display: block;
+
         margin: 0 0 5px 0;
+
         padding: 5px 0 0;
+
         position: relative;
+
         word-wrap: break-word;
+
       }
+
       input {
+
         background: #fff;
+
         border: 1px solid #d0d0d0;
+
         border-radius: 2px;
+
         box-sizing: border-box;
+
         color: #434343;
+
         font-family: inherit;
+
         font-size: inherit;
-        height: 2.14285714em;
+
+        <!-- height: 2.14285714em; -->
+
         line-height: 1.4285714285714;
+
         padding: 4px 5px;
+
         margin: 0;
-        width: 100%;
+
+        <!-- width: 100%; -->
+
       }
+
       input:focus {
+
         border-color: #4C669F;
+
         outline: 0;
+
       }
+
       .button-container {
+
         box-sizing: border-box;
+
         clear: both;
+
         margin: 1px 0 0;
+
         padding: 4px 0;
+
         position: relative;
+
         width: 100%;
+
       }
+
       button[type=submit] {
+
         box-sizing: border-box;
+
         background: #f5f5f5;
+
         border: 1px solid #bdbdbd;
+
         border-radius: 2px;
+
         color: #434343;
+
         cursor: pointer;
+
         display: inline-block;
+
         font-family: inherit;
+
         font-size: 14px;
+
         font-variant: normal;
+
         font-weight: 400;
+
         height: 2.14285714em;
+
         line-height: 1.42857143;
+
         margin: 0;
+
         padding: 4px 10px;
+
         text-decoration: none;
+
         vertical-align: baseline;
+
         white-space: nowrap;
+
       }
+
     </style>
-    <title>ConfigManager</title>
+
+    <title>Wordclock Settings</title>
+
   </head>
+
   <body>
+
     <div class="container">
+
       <h3 style="text-align: left;">General Settings</h3>
-      <form method="post" action="/settings">
-        <div class="field-group">
-          <label>Hour</label>
-          <input name="hour" type="text" size="2">
+
+	  
+
+      <form name="settings" method="post" action="/settings">
+
+		<p>
+
+	    <input type="radio" name="ntpUse" value="1" onchange="initcollapsibles();">Network Time Setup
+
+		<input type="radio" name="ntpUse" value="0" checked onchange="initcollapsibles();">Manual Time Setup
+
+		</p>
+
+		<div id=manualtime>
+
+			<div class="field-group">
+
+			  <label>Hour</label>
+
+			  <input name="hour" type="text" size="2">
+
+			</div>
+
+			<div class="field-group">
+
+			  <label>Minute</label>
+
+			  <input name="minute" type="text" size="2" id="inputMin">
+
+			</div>
+
+			<p>
+
+			<input type="radio" name="wifiConnect" value="1" onchange="initcollapsibles();">Wifi Client Mode
+
+			<input type="radio" name="wifiConnect" value="0" checked onchange="initcollapsibles();">Wifi Access Point Mode
+
+			</p>
+
+		</div>
+
+		
+
+		<div id=wifisettings>
+
+			<div class="field-group">
+
+			  <label>SSID</label>
+
+			  <input name="ssid" type="text" size="32">
+
+			</div>
+
+			<div class="field-group">
+
+			  <label>Password</label>
+
+			  <input name="password" type="password" size="64">
+
+			</div>
+
+		</div>
+
+		<div id=ntpsettings>
+
+			<div class="field-group">
+
+			  <label>NTP Server</label>
+
+			  <input name="ntpServer" type="text" size="20">
+
+			</div>
+
+		</div>
+
+		
+
+		<button type="button" class="collapsible" id="colorbutton">Color Management</button>
+
+		<div id="colorsettings">
+
+			<h3 style="text-align: left;">Color Management</h3>
+
+			
+
+			<canvas width="400" height="400" id="myCanvas"></canvas>
+
+			<div class="field-group">
+
+			<table>
+
+				<tr>
+
+					<td style="width: 100px">
+
+						<p><label>Color 1</label></p>
+
+						  <select name="c1" id="inputColor0">
+
+							  <option value="0" selected>Red</option>
+
+							  <option value="32">Orange</option>
+
+							  <option value="64">Yellow</option>
+
+							  <option value="96">Green</option>
+
+							  <option value="128">Aqua</option>
+
+							  <option value="160">Blue</option>
+
+							  <option value="192">Purple</option>
+
+							  <option value="224">Pink</option>
+
+						  </select>				
+
+					</td>
+
+					<td style="width: 100px">
+
+						
+
+					  <p><label>Color 2</label></p>
+
+					  <select name="c2" id="inputColor1">
+
+						  <option value="0">Red</option>
+
+						  <option value="32" selected>Orange</option>
+
+						  <option value="64">Yellow</option>
+
+						  <option value="96">Green</option>
+
+						  <option value="128">Aqua</option>
+
+						  <option value="160">Blue</option>
+
+						  <option value="192">Purple</option>
+
+						  <option value="224">Pink</option>
+
+					  </select>
+
+					</td>
+
+					<td style="width: 100px">
+
+						<p><label>Color 3</label></p>
+
+					  <select name="c3" id="inputColor2">
+
+						  <option value="0">Red</option>
+
+						  <option value="32">Orange</option>
+
+						  <option value="64" selected>Yellow</option>
+
+						  <option value="96">Green</option>
+
+						  <option value="128">Aqua</option>
+
+						  <option value="160">Blue</option>
+
+						  <option value="192">Purple</option>
+
+						  <option value="224">Pink</option>
+
+					  </select>
+
+					</td style="width: 100px">
+
+					<td>
+
+						<p><label>Color 4</label></p>
+
+					  <select name="c4" id="inputColor3">
+
+						  <option value="0">Red</option>
+
+						  <option value="32">Orange</option>
+
+						  <option value="64">Yellow</option>
+
+						  <option value="96" selected>Green</option>
+
+						  <option value="128">Aqua</option>
+
+						  <option value="160">Blue</option>
+
+						  <option value="192">Purple</option>
+
+						  <option value="224">Pink</option>
+
+					  </select>
+
+					</td>
+
+				</tr>
+
+			</table>
+
         </div>
-        <div class="field-group">
-          <label>Minute</label>
-          <input name="minute" type="text" size="2">
-        </div>
-        <div class="field-group">
-          <label>NTP Usage (yes/no)</label>
-          <input name="ntpUse" type="text" size="3">
-        </div>
-        <div class="field-group">
-          <label>NTP Server</label>
-          <input name="ntpServer" type="text" size="20">
-        </div>
-		<h3 style="text-align: left;">Color Management</h3>
-		<ul>
-		<li>Red (0..) "HUE_RED"</li>
-		<li>Orange (32..) "HUE_ORANGE"</li>
-		<li>Yellow (64..) "HUE_YELLOW"</li>
-		<li>Green (96..) "HUE_GREEN"</li>
-		<li>Aqua (128..) "HUE_AQUA"</li>
-		<li>Blue (160..) "HUE_BLUE"</li>
-		<li>Purple (192..) "HUE_PURPLE"</li>
-		<li>Pink(224..) "HUE_PINK"</li>
-		</ul>
-        <div class="field-group">
-          <label>Color 1</label>
-          <input name="c1" type="text" size="5">
-        </div>
+
+		
+
 		<div class="field-group">
-          <label>Color 2</label>
-          <input name="c2" type="text" size="5">
+
+			<table>
+
+			<td style="width: 200px">
+
+				<p><label>Saturation</label></p>
+
+				<input type="range" id="sat" name="sat" min="0" max="255">
+
+			</td style="width: 200px">
+
+			<td style="width: 0"></td>
+
+			<td>
+
+				<p><label>Brightness</label></p>
+
+				<input type="range" id="bri" name="bri" min="0" max="255">
+
+			</td>
+
+			</table>
+
         </div>
-		<div class="field-group">
-          <label>Color 3</label>
-          <input name="c3" type="text" size="5">
-        </div>
-		<div class="field-group">
-          <label>Color 4</label>
-          <input name="c4" type="text" size="5">
-        </div>
-		<div class="field-group">
-          <label>Saturation</label>
-          <input name="sat" type="text" size="3">
-        </div>
-		<div class="field-group">
-          <label>Brightness</label>
-          <input name="bri" type="text" size="3">
-        </div>
-        <div class="button-container">
-          <button type="submit">Save</button>
-        </div>
+
+		
+
+	</div>
+
+	
+
+	<div class="button-container">
+
+	  <button type="submit">Save</button>
+
+	</div>
+
+	
+
+		
+
       </form>
+
     </div>
+
     <script>
+
+	function initcollapsibles()
+
+	{
+
+		
+
+		if(document.settings.ntpUse.value == 1)
+
+		{ 
+
+		  document.getElementById("manualtime").style.display = "none";
+
+		  document.getElementById("ntpsettings").style.display = "block"; 
+
+		  document.getElementById("wifisettings").style.display = "block";
+
+		}
+
+		else if(document.settings.wifiConnect.value == 1)
+
+		{ 
+
+		  document.getElementById("ntpsettings").style.display = "none"; 
+
+		  document.getElementById("wifisettings").style.display = "block";
+
+		  document.getElementById("manualtime").style.display = "block";
+
+		}
+
+		else
+
+		{
+
+		  document.getElementById("ntpsettings").style.display = "none"; 
+
+		  document.getElementById("wifisettings").style.display = "none";
+
+		  document.getElementById("manualtime").style.display = "block";
+
+		}
+
+		
+
+		document.getElementById("colorsettings").style.display = "none";
+
+					
+
+		<!-- if (content.style.display === "block") { -->
+
+		  <!-- content.style.display = "none"; -->
+
+		<!-- } else { -->
+
+		  <!-- content.style.display = "block"; -->
+
+		<!-- } -->
+
+	}
+
+	
+
+	function setFocusToTextBox(){
+
+    document.getElementById("inputMin").focus();
+
+}
+
+	
+
+	$(document).ready(function() 
+
+	{
+
+		initcollapsibles();
+
+				
+
+		var matrix = new Array(8);
+
+		var hoverPartToDraw=-1;
+
+		var clickPartToDraw=-1;
+
+		
+
+		var startX=40;
+
+		var startY=40;
+
+		var abstand=40;
+
+		
+
+		
+
+		matrix[0] = ['I', 'T', 'S', 'O', 'F', 'T', 'W', 'E'];
+
+		matrix[1] = ['N', 'T', 'Y', 'F', 'I', 'V', 'E', 'N'];
+
+		matrix[2] = ['H', 'A', 'L', 'F', 'P', 'A', 'S', 'T'];
+
+		matrix[3] = ['T', 'O', 'S', 'T', 'W', 'O', 'N', 'E'];
+
+		matrix[4] = ['E', 'I', 'G', 'H', 'E', 'L', 'I', 'N'];
+
+		matrix[5] = ['S', 'O', 'U', 'R', 'S', 'E', 'V', 'E'];
+
+		matrix[6] = ['I', 'F', 'I', 'V', 'E', 'T', 'E', 'N'];
+
+		matrix[7] = ['X', 'N', 'O', 'C', 'L', 'O', 'C', 'K'];
+
+		
+
+		var canvas = document.getElementById("myCanvas");
+
+			
+
+		if (canvas.getContext) 
+
+		{
+
+			var ctx = canvas.getContext("2d");
+
+			ctx.fillStyle = "black";
+
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			ctx.fillStyle = "red";
+
+			ctx.font = '30px serif';
+
+			ctx.textAlign = "center";
+
+			ctx.textBaseline = "middle";
+
+			ctx.strokeStyle = "blue";  // This path is blue.
+
+			
+
+			
+
+			canvas.addEventListener("mousemove", function(e){
+
+				updateCanvas(e.pageX-canvas.offsetLeft, e.pageY-canvas.offsetTop, true);
+
+				}, false);
+
+			
+
+			ctx.strokeStyle = "grey";
+
+			ctx.lineWidth = "3";
+
+			
+
+			zeichneBuchstaben(0,7,0,7);
+
+				
+
+			
+
+			$("#myCanvas").click(function(f) {
+
+					updateCanvas(f.pageX-canvas.offsetLeft, f.pageY-canvas.offsetTop, false);
+
+			});
+
+				
+
+			function colorCanvas(x,y)
+
+			{
+
+				ctx.fillStyle = "white";
+
+				ctx.fillText(hoverX ,25,38);
+
+				ctx.fillText(hoverY ,25,88);
+
+				
+
+				hoverX=x-canvas.offsetLeft;
+
+				hoverY=y-canvas.offsetTop;
+
+				ctx.fillStyle = "red";
+
+				ctx.fillText(hoverX, 25,38);
+
+				ctx.fillText(hoverY, 25,88);				
+
+			}
+
+			
+
+			function recognizePartToDraw(x, y)
+
+			{
+
+				if((y==0 && x<=2) || (y==7 && x>=2))
+
+				{ return 0;}
+
+				else if((y==0 && x>=4) || y==1 || (y==2 && x<=3)) 
+
+				{return 1;}
+
+				else if((y==2 && x>=4) || (y==3 && x<=1))
+
+				{return 2;}
+
+				else if((y==3 && x>=3) || y==4 || y==5 || y==6 || (y==7 && x==0))
+
+				{return 3;}
+
+				else return -1;
+
+			}
+
+			
+
+			function zeichneRahmen(partToDraw, visible)
+
+			{
+
+				ctx.beginPath();
+
+				if(visible) { 
+
+					ctx.strokeStyle = "red"; 
+
+					ctx.lineWidth = "3";
+
+				}
+
+				else { 
+
+					ctx.strokeStyle = "black"; 
+
+					ctx.lineWidth = "4";
+
+				}
+
+				if(partToDraw==0)
+
+				{
+
+					ctx.moveTo(startX, startY);
+
+					ctx.lineTo(startX+abstand*3, startY);
+
+					ctx.lineTo(startX+abstand*3, startY+abstand);
+
+					ctx.lineTo(startX, startY+abstand);
+
+					ctx.lineTo(startX, startY);
+
+					ctx.moveTo(startX+abstand*8, startY+abstand*8);
+
+					ctx.lineTo(startX+abstand*2, startY+abstand*8);
+
+					ctx.lineTo(startX+abstand*2, startY+abstand*7);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*7);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*8);
+
+				}
+
+				else if(partToDraw==1)
+
+				{
+
+					ctx.moveTo(startX, startY+abstand);
+
+					ctx.lineTo(startX+abstand*4, startY+abstand);
+
+					ctx.lineTo(startX+abstand*4, startY);
+
+					ctx.lineTo(startX+abstand*8, startY);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*2);
+
+					ctx.lineTo(startX+abstand*4, startY+abstand*2);
+
+					ctx.lineTo(startX+abstand*4, startY+abstand*3);
+
+					ctx.lineTo(startX, startY+abstand*3);
+
+					ctx.lineTo(startX, startY+abstand);
+
+				}
+
+				else if(partToDraw==2)
+
+				{
+
+					ctx.moveTo(startX+abstand*8, startY+abstand*2);
+
+					ctx.lineTo(startX+abstand*4, startY+abstand*2);
+
+					ctx.lineTo(startX+abstand*4, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*2);
+
+					ctx.moveTo(startX, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*2, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*2, startY+abstand*4);
+
+					ctx.lineTo(startX, startY+abstand*4);
+
+					ctx.lineTo(startX, startY+abstand*3);
+
+				}
+
+				else if(partToDraw==3)
+
+				{
+
+					ctx.moveTo(startX, startY+abstand*4);
+
+					ctx.lineTo(startX+abstand*3, startY+abstand*4);
+
+					ctx.lineTo(startX+abstand*3, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*3);
+
+					ctx.lineTo(startX+abstand*8, startY+abstand*7);
+
+					ctx.lineTo(startX+abstand*1, startY+abstand*7);
+
+					ctx.lineTo(startX+abstand*1, startY+abstand*8);
+
+					ctx.lineTo(startX, startY+abstand*8);
+
+					ctx.lineTo(startX, startY+abstand*4);
+
+				}
+
+				ctx.stroke(); 
+
+				ctx.closePath(); // Close the current path.
+
+			}
+
+			
+
+			function updateFarbeWort(partToDraw)
+
+			{
+
+				zeichneWoerter(partToDraw, false);
+
+				zeichneWoerter(partToDraw, true);
+
+				
+
+			}
+
+			
+
+			function zeichneWoerter(partToDraw, visible)
+
+			{
+
+				if(visible) {
+
+					var colorName =$("#inputColor"+partToDraw+" :selected").text();
+
+					ctx.strokeStyle = colorName.toLowerCase();
+
+					ctx.lineWidth = "1";
+
+				}
+
+				else {
+
+					ctx.strokeStyle = "grey";
+
+					ctx.lineWidth = "3";	
+
+				}
+
+				if(partToDraw==0)
+
+				{
+
+					zeichneBuchstaben(0,2,0,0);
+
+					zeichneBuchstaben(2,7,7,7);
+
+				}
+
+				else if(partToDraw==1)
+
+				{
+
+					zeichneBuchstaben(5,7,0,0);
+
+					zeichneBuchstaben(0,6,1,1);
+
+				}
+
+				else if(partToDraw==2)
+
+				{
+
+					zeichneBuchstaben(4,7,2,2);
+
+					zeichneBuchstaben(0,1,3,3);
+
+				}
+
+				else if(partToDraw==3)
+
+				{
+
+					zeichneBuchstaben(4,5,4,4);
+
+					zeichneBuchstaben(5,6,5,5);
+
+					zeichneBuchstaben(6,7,6,6);
+
+				}
+
+			}
+
+			
+
+			function zeichneBuchstaben(fromX, toX, fromY, toY)
+
+			{
+
+				for (var y = fromY; y <= toY; y++) {
+
+					for (var x = fromX; x <= toX; x++) {
+
+						<!-- ctx.strokeRect(x*50,y*50,50,50); -->
+
+						ctx.strokeText(matrix[y][x],startX+abstand/2+x*abstand,startY+abstand/2+3+y*abstand);
+
+					}
+
+				}
+
+			}
+
+
+
+			function updateCanvas(pX, pY, hover){
+
+				var targetPartToDraw = recognizePartToDraw(Math.floor(((pX-startX) / abstand)),Math.floor(((pY-startY) / abstand)));
+
+				
+
+				if(hover && (targetPartToDraw!=hoverPartToDraw)){
+
+					if(hoverPartToDraw!=-1)
+
+					{ zeichneRahmen(hoverPartToDraw,false); }
+
+					zeichneRahmen(targetPartToDraw,true);
+
+					hoverPartToDraw=targetPartToDraw;
+
+				}
+
+				else if(!hover && (targetPartToDraw!=clickPartToDraw)){
+
+					if(targetPartToDraw>=0 && targetPartToDraw<4)
+
+					{					
+
+						var id="inputColor"+targetPartToDraw;
+
+						document.getElementById(id).focus();
+
+						if(clickPartToDraw!=-1)
+
+						{ zeichneWoerter(clickPartToDraw,false); }
+
+						zeichneWoerter(targetPartToDraw,true);
+
+						clickPartToDraw=targetPartToDraw;
+
+					}
+
+				}
+
+			}
+
+		}
+
+		
+
+		
+
+		var coll = document.getElementById("colorbutton");
+
+		coll.addEventListener("click", function() {
+
+			this.classList.toggle("active");
+
+			var content = document.getElementById("colorsettings");
+
+			if (content.style.display === "block") {
+
+			  content.style.display = "none";
+
+			} else {
+
+			  content.style.display = "block";
+
+			}
+
+		  });
+
+		
+
+		
+
+		
+
+		var element = document.getElementById("inputColor0");
+
+		element.addEventListener('change', function() { updateFarbeWort(0); });
+
+		element.addEventListener('focusin', function() { zeichneRahmen(0,true); });
+
+		element.addEventListener('focusout', function() { zeichneRahmen(0, false); });
+
+		
+
+		var element = document.getElementById("inputColor1");
+
+		element.addEventListener('change', function() { updateFarbeWort(1); });
+
+		element.addEventListener('focusin', function() { zeichneRahmen(1,true); });
+
+		element.addEventListener('focusout', function() { zeichneRahmen(1, false); });
+
+		
+
+		var element = document.getElementById("inputColor2");
+
+		element.addEventListener('change', function() { updateFarbeWort(2); });
+
+		element.addEventListener('focusin', function() { zeichneRahmen(2,true); });
+
+		element.addEventListener('focusout', function() { zeichneRahmen(2, false); });
+
+		
+
+		var element = document.getElementById("inputColor3");
+
+		element.addEventListener('change', function() { updateFarbeWort(3); });
+
+		element.addEventListener('focusin', function() { zeichneRahmen(3,true); });
+
+		element.addEventListener('focusout', function() { zeichneRahmen(3, false); });
+
+		
+
+	});
+
+		
+
       $.ajax({
+
              url: '/settings',
+
              success: function(data) {
+
                $.each(data, function(key, value, data) {
+
                  var input = "input:text[name='" + key + "']";
+
                  $(input).val(value)
+
                });
+
              }
+
       });
+
       $.fn.serializeObject = function() {
+
         var o = {};
+
         var a = this.serializeArray();
+
         $.each(a, function() {
+
           if (o[this.name]) {
+
             if (!o[this.name].push) {
+
               o[this.name] = [o[this.name]];
+
             }
+
             o[this.name].push(this.value || '');
+
           } else {
+
             o[this.name] = this.value || '';
+
           }
+
         });
+
         return o;
+
       };
+
       var validationSettings = {
+
         rules: {
+
           hour: {
+
             required: false
+
           },
+
           minute: {
+
             required: false
+
           },
+
           second: {
+
             required: false
+
           },
+
           ntpUse: {
+
             required: false
+
           },
+
           ntpServer: {
+
             required: false
+
           },
+
           c1: {
+
             required: false
+
 		  },
+
           c2: {
+
             required: false
+
 		  },
+
           c3: {
+
             required: false
+
 		  },
+
           brightness: {
+
             required: false
+
           }
+
         }
+
       };
+
       $('form').validate(validationSettings);
+
       $('form').on('submit', function(e) {
+
         if($(this).valid()) {
+
           e.preventDefault();
+
           var formData = $(this).serializeObject();
+
           // Send data as a PUT request
+
           $.ajax({
+
                  url: '/settings',
+
                  type: 'PUT',
+
                  data: JSON.stringify(formData),
+
                  contentType: 'application/json',
+
                  success: function(data) {
+
                    console.log(formData);
+
                  }
+
           });
+
           return false;
+
         }
+
       });
+
     </script>
+
   </body>
+
 </html>

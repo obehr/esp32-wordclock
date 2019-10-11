@@ -19,7 +19,10 @@ Config::Config(ConfigManager& cm) :
     cm.addParameter ("hour", cfg_raw.hour, 10);
     cm.addParameter ("minute", cfg_raw.minute, 10);
     cm.addParameter ("ntpUse", cfg_raw.ntpUse, 10);
+    cm.addParameter ("wifiConnect", cfg_raw.wifiConnect, 10);
     cm.addParameter ("ntpServer", cfg_raw.ntpServer, 20);
+    cm.addParameter ("ssid", cfg_raw.ssid, 32);
+    cm.addParameter ("password", cfg_raw.password, 64);
     cm.addParameter ("c1", cfg_raw.c1, 10);
     cm.addParameter ("c2", cfg_raw.c2, 10);
     cm.addParameter ("c3", cfg_raw.c3, 10);
