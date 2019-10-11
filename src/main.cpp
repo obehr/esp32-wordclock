@@ -18,6 +18,9 @@ struct Config
     bool enabled;
     char ntpServer[20];
     char ntpUse[10];
+    char wifiConnect[10];
+    char ssid[32];
+    char password[64];
     char hour[10];
     char minute[10];
     char c1[10];
@@ -31,7 +34,10 @@ struct Config
 struct castedConfig
 {
     bool ntpUse = true;
+    bool wifiConnect = false;
     String ntpServer = "fritz.box";
+    String ssid = "test";
+    String password = "testtest";
     uint8_t hour = 0;
     uint8_t minute = 0;
     uint16_t c1 = 50;
@@ -98,7 +104,10 @@ void setup ()
     configManager.addParameter ("hour", config.hour, 10);
     configManager.addParameter ("minute", config.minute, 10);
     configManager.addParameter ("ntpUse", config.ntpUse, 10);
+    configManager.addParameter ("wifiConnect", config.wifiConnect, 10);
     configManager.addParameter ("ntpServer", config.ntpServer, 20);
+    configManager.addParameter ("ssid", config.ntpServer, 32);
+    configManager.addParameter ("password", config.ntpServer, 64);
     configManager.addParameter ("c1", config.c1, 10);
     configManager.addParameter ("c2", config.c2, 10);
     configManager.addParameter ("c3", config.c3, 10);
@@ -142,6 +151,39 @@ void checkConfig (bool init)
     bool changeColor = false;
     bool changeTimeCfg = false;
     bool changeTime = false;
+    bool changeWifiMode = false;
+    bool changeWifiCfg = false;
+
+    bool tempWifiConnect = (0U == strcmp (config.wifiConnect, "1"));
+	if (validConfig.wifiConnect != tempWifiConnect)
+	{
+		validConfig.wifiConnect = tempWifiConnect;
+		changeWifiMode = true;
+		Serial.println ("wifiConnect changed");
+	}
+
+	if (validConfig.wifiConnect)
+	{
+		if ((0U != strcmp(config.ssid, validConfig.ssid)) && (0U != strcmp(config.ssid, "")))
+		{
+			// String changed and is not empty
+			validConfig.ssid = config.ssid;
+			changeWifiCfg = true;
+			Serial.println ("ssid changed");
+		}
+
+		if ((0U != strcmp(config.password, validConfig.password)) && (0U != strcmp(config.password, "")))
+		{
+			// String changed and is not empty
+			validConfig.password = config.password;
+			changeWifiCfg = true;
+			Serial.println ("ssid changed");
+		}
+	}
+	else
+	{
+
+	}
 
     int tempInt = atoi (config.c1);
     if (tempInt >= 0 && tempInt < 256)
@@ -233,7 +275,7 @@ void checkConfig (bool init)
         itoa (validConfig.bri, config.bri, 10);
     }
 
-    bool tempNtpUse = (0U == strcmp (config.ntpUse, "1")) && (net.getMode () == Networking::Mode::API);
+    bool tempNtpUse = validConfig.wifiConnect && (0U == strcmp (config.ntpUse, "1")) && (net.getMode () == Networking::Mode::API);
     if (validConfig.ntpUse != tempNtpUse)
     {
         validConfig.ntpUse = tempNtpUse;
