@@ -1,4 +1,12 @@
 
+/*
+ * Note: Define Eclipse build variable ${PLATFORMIO}.
+ * - Go to Window -> Preferences -> C/C++ -> Build -> Build variables
+ * - Add new variable PLATFORMIO of type String.
+ * - For Linux, the default path is ${HOME}/.platformio
+ * - For Windows, the default path is ${USERPROFILE}/.platformio
+ */
+
 #include "SerialInit.hpp"
 #include "ConfigManager.h"
 #include "ClockFace.hpp"
