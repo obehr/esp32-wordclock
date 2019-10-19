@@ -33,12 +33,24 @@ private:
     // Reference to Config
     Config& cfg;
 
+    // Muss keine Klassenvariable sein. Wird nur in Wordclock::loop() verwendet
+    struct tm timeinfo;
+
     int Wordlayout;
 
-    const char *ntpServer = "fritz.box";
+    const char* ntpServer = "fritz.box";
 
     const long gmtOffset_sec = 3600;
     const int daylightOffset_sec = 3600;
+
+    static const String wordsMinute[];
+    static const String wordsHour[];
+
+    int letzteMinute;
+    int letzteStunde;
+
+    uint16_t countdown;
+    uint8_t countdown2;
 
     int lastTimeDisplayed;
     uint8_t currentHour;

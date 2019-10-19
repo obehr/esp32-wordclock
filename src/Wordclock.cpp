@@ -4,26 +4,21 @@
 #include "Wordclock.hpp"
 #include "ClockFace.hpp"
 
-struct tm timeinfo;
-
-
-String wordsMinute[12] =
+const String Wordclock::wordsMinute[12] =
     { "oclock", "five past", "ten past", "fifteen past", "twenty past", "twentyfive past", "half past", "twentyfive to",
                     "twenty to", "fifteen to", "ten to", "five to" };
-String wordsHour[12] =
+const String Wordclock::wordsHour[12] =
     { "twelve", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven" };
-
-int letzteMinute;
-int letzteStunde;
-
-uint16_t countdown;
-uint8_t countdown2;
 
 Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg, uint8_t Wordlayout) :
     net(net),
     cf(cf),
     cfg(cfg),
     Wordlayout(Wordlayout),
+    letzteStunde(-1),
+    letzteMinute(-1),
+    countdown(0),
+    countdown2(0),
     lastTimeDisplayed(-1),
     currentHour(0),
     currentMinute(0),
@@ -33,13 +28,6 @@ Wordclock::Wordclock(Networking& net, ClockFace& cf, Config& cfg, uint8_t Wordla
     ntpZuletztVerwendet(false)
 {
     Serial.println ("Init class Wordclock.");
-
-    letzteStunde = -1;
-    letzteMinute = -1;
-    countdown = 0;
-    countdown2 = 0;
-
-
 }
 
 void Wordclock::notify()

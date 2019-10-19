@@ -28,6 +28,8 @@ public:
 private:
     Mode mode;
 
+    const uint16_t DNS_PORT = 53;
+
     char *apName = (char *)"Thing";
     char *apPassword = NULL;
     unsigned long apStart = 0;

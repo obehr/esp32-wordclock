@@ -1,11 +1,6 @@
 
 #include "Networking.hpp"
 
-
-
-const uint16_t DNS_PORT = 53;
-
-
 Networking::Networking(DNSServer& dnsServer) : dnsServer(dnsServer)
 {
     Serial.println ("Init class Networking.");
@@ -36,8 +31,6 @@ void Networking::setAPPassword (const char *password)
     this->apPassword = (char*) password;
 }
 
-
-
 void Networking::setAPTimeout (const int timeout)
 {
     this->apTimeout = timeout;
@@ -52,8 +45,6 @@ void Networking::setWifiConnectInterval (const int interval)
 {
     this->wifiConnectInterval = interval;
 }
-
-
 
 void Networking::startAP ()
 {
