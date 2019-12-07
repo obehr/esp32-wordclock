@@ -1,0 +1,42 @@
+Der Anschluss ESP32<->FT2232H ist in der Tabelle in esp32_ft2232h-jtag.png.
+
+Graphisch ist das nochmal in Debug-Help-ESP32-JTAG-Connections.png dargestellt. Das kann aber
+je nach Board unterschiedlich sein. Die Klone haben nicht alle die gleiche Pinbelegung.
+
+Das Pinout des FT2232H-Moduls ist in der Anleitung. Auf meinen Fotos habe ich mich bei
+der Farbkodierung an das Bild oben gehalten. Wichtig: Die Versorgung nicht verbinden.
+Sowohl ESP32 als auch der Debugger versorgen sich selbst.
+
+Zum Software-Part.
+
+Unter Windows muss man zunächst den richtigen Treiber installieren. Das geht über das Zadig-Tool,
+wie hier erklärt:
+
+https://community.platformio.org/t/esp32-pio-unified-debugger/4541/16
+
+Dann muss man OpenOCD starten. Das stellt die Verbindung zum Board her. Es braucht als Input
+welche Debugger-Hardware du verwendest und welchen Chip du debuggen willst. Die Einstellungen
+sind bereits in Skripten vorkonfiguriert. Ich rufe es so auf:
+
+.platformio/packages/tool-openocd-esp32/bin/openocd -s .platformio/packages/tool-openocd-esp32/share/openocd/scripts -f interface/ftdi/esp32_devkitj_v1.cfg -f board/esp-wroom-32.cfg
+
+Oder kurz: openocd -f interface/ftdi/esp32_devkitj_v1.cfg -f board/esp-wroom-32.cfg
+
+Die Ausgabe ist dann wie in openocd.png dargestellt.
+
+Wenn OpenOCD läuft, kann man zum Test eine GNU-Debugger-Session auf der Kommandozeile starten.
+Der GDB verbindet sich mit OpenOCD, das auf Port 3333 lauscht. Die aktuelle firmware.elf sollte
+man vorher auf das Target laden. Dann ins Projektverzeichnis wechseln und folgendes ausführen:
+
+xtensa-esp32-elf-gdb -ex 'target remote localhost:3333' .pio/build/esp32dev/firmware.elf
+
+Output siehe gdb.png. Den GDB mit "quit" beenden. OpenOCD muss weiterlaufen.
+
+Wenn das erfolgreich ist, konfiguriert man noch Eclipse, damit es den GDB verwendet.
+Das geht unter Run -> Debug Configurations... -> GDB Hardware Debugging. Dort erstellt man
+eine Konfiguration wie auf den Screenshotsdebug_conf_*.png dargestellt.
+
+Wichtig: Keine der Eintragungen vergessen!
+
+Nun kommt der große Moment. Wenn man auf "Debug" klickt, sieht es aus wie im Bild debug_session.png.
+

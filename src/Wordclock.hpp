@@ -38,6 +38,9 @@ private:
 
     int Wordlayout;
 
+    int letzteStunde;
+    int letzteMinute;
+
     const char* ntpServer = "fritz.box";
 
     const long gmtOffset_sec = 3600;
@@ -45,9 +48,6 @@ private:
 
     static const String wordsMinute[];
     static const String wordsHour[];
-
-    int letzteMinute;
-    int letzteStunde;
 
     uint16_t countdown;
     uint8_t countdown2;
