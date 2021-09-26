@@ -1,0 +1,956 @@
+/* Hello World Example
+
+   This example code is in the Public Domain (or CC0 licensed, at your option.)
+
+   Unless required by applicable law or agreed to in writing, this
+   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+   CONDITIONS OF ANY KIND, either express or implied.
+*/
+#include <stdio.h>
+#include <stdint.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_spi_flash.h"
+
+#include "FastLED.h"
+
+#include <string.h>
+#include <esp_wifi.h>
+#include <esp_netif.h>
+#include "esp_log.h"
+
+#include "wifi_manager.h"
+
+static const char TAG[] = "wordclock";
+
+
+
+//#define NUM_LEDS 512
+#define NUM_LEDS 64
+#define DATA_PIN_1 26
+#define DATA_PIN_2 19
+#define BRIGHTNESS  80
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+
+const char *passwort1 = "SOURSEVE";
+const char *passwort2 = "SVNEHTNV";
+const char *passwort3 = "OSVNRNEV";
+const char *apName1 = "WordclockV1";
+const char *apName2 = "WordclockV2";
+const char *apName3 = "WordclockV3";
+
+int16_t variant_led_numbering;
+int16_t variant_clockface;
+int16_t orientation;
+int16_t wort_its[3];
+int16_t wort_oclock[6];
+int16_t wort_past[4];
+int16_t wort_to[2];
+int16_t wort_min_five[4];
+int16_t wort_min_ten[3];
+int16_t wort_min_fifteen[7];
+int16_t wort_min_twenty[6];
+int16_t wort_min_half[4];
+int16_t wort_hour_one[3];
+int16_t wort_hour_two[3];
+int16_t wort_hour_three[5];
+int16_t wort_hour_four[4];
+int16_t wort_hour_five[4];
+int16_t wort_hour_six[3];
+int16_t wort_hour_seven[5];
+int16_t wort_hour_eight[5];
+int16_t wort_hour_nine[4];
+int16_t wort_hour_ten[3];
+int16_t wort_hour_eleven[6];
+int16_t wort_hour_twelve[6];
+
+int16_t matrix_leds[8][8];
+char led_letters[64];
+uint16_t led_colors[64];
+bool display = false;
+
+const char matrix_clockface[8][8] = 
+{
+  {'i', 't', 's', 'o', 'f', 't', 'w', 'e'},
+  {'n', 't', 'y', 'f', 'i', 'v', 'e', 'n'},
+  {'h', 'a', 'l', 'f', 'p', 'a', 's', 't'},
+  {'t', 'o', 's', 't', 'w', 'o', 'n', 'e'},
+  {'e', 'i', 'g', 'h', 'e', 'l', 'i', 'n'},
+  {'s', 'o', 'u', 'r', 's', 'e', 'v', 'e'},
+  {'i', 'f', 'i', 'v', 'e', 't', 'e', 'n'},
+  {'x', 'n', 'o', 'c', 'l', 'o', 'c', 'k'}
+};
+
+int aktuelleMinute;
+int aktuelleStunde;
+int letzteMinute;
+int letzteStunde;
+
+int16_t currentMinute;
+int16_t currentHour;
+
+int16_t lastMinute=-1;
+
+CRGBArray<64> matrix;
+
+class Liste {
+  public:
+    int16_t list[64];
+    uint16_t length = 0;
+
+    void clear() { 
+      length = 0; 
+    }
+
+    int16_t get_item(int index) { 
+      if(index < length) {
+        return list[index];
+      }
+      else {
+        return -2;
+      } 
+    }
+
+
+    int get_index(int16_t item) {
+      if(length == 0)
+      { return -1; }
+
+      for(int i=0; i<length; i++)
+      { 
+        if(list[i] == item)
+        { return i; }
+      }
+      return -1;
+    }
+
+
+    void append(int16_t item) {
+      if(length<64)
+      {
+        list[length] = item;
+        length++;
+      }
+    }
+};
+
+int16_t liste_aufbau[64];
+uint16_t laenge_liste_aufbau = 0;
+int16_t liste_abbau[64];
+uint16_t laenge_liste_abbau = 0;
+int16_t liste_effekt[64];
+uint16_t laenge_liste_effekt = 0;
+int16_t liste_nachricht[64];
+uint16_t laenge_liste_nachricht = 0;
+
+extern "C" {
+  void app_main();
+}
+
+/**
+ * @brief RTOS task that periodically prints the heap memory available.
+ * @note Pure debug information, should not be ever started on production code! This is an example on how you can integrate your code with wifi-manager
+ */
+void monitoring_task(void *pvParameter)
+{
+	for(;;){
+		ESP_LOGI(TAG, "free heap: %d",esp_get_free_heap_size());
+		vTaskDelay( pdMS_TO_TICKS(10000) );
+	}
+}
+
+/**
+ * @brief this is an exemple of a callback that you can setup in your own app to get notified of wifi manager event.
+ */
+void cb_connection_ok(void *pvParameter){
+	ip_event_got_ip_t* param = (ip_event_got_ip_t*)pvParameter;
+
+	/* transform IP to human readable string */
+	char str_ip[16];
+	esp_ip4addr_ntoa(&param->ip_info.ip, str_ip, IP4ADDR_STRLEN_MAX);
+
+	ESP_LOGI(TAG, "I have a connection and my IP is %s!", str_ip);
+}
+
+/*static void blinkWithFx_test(void *pvParameters) {
+  uint32_t lastShow = 0;
+  uint32_t now;
+  int16_t i = 0;
+  while (true) {
+    now = millis();
+    if(now < lastShow)
+    {
+      lastShow = now;
+      continue;
+    }
+
+    if(now - lastShow < 100)
+    {
+      continue;
+    }
+    
+    lastShow = now;
+    if(i<64)
+    {
+      matrix[i].setHSV(100, 255, 100);
+    }
+    else
+    {
+      matrix[i-64].setHSV(100, 255, 0);
+    }
+    FastLED.show();
+    if(i<127)
+    {
+      i++;
+    }
+    else
+    {
+      i=0;
+    }
+  }
+};*/
+
+
+void clearLists(void)
+{
+  laenge_liste_aufbau = 0;
+  laenge_liste_abbau = 0;
+  laenge_liste_effekt = 0;
+  laenge_liste_nachricht = 0;
+}
+
+/*
+int16_t get_led_id(x, y)
+{
+    ESP_LOGI(TAG, "Uebersetze %d, %d, in led id %d", x, y, matrixLeds[x][y]);
+    return matrixLeds[x][y];
+}
+*/
+
+char get_letter(int16_t led_id)
+{
+    //ESP_LOGI(TAG, "Uebersetze led id %d, in letter %d", led_id, led_letters[led_id]);
+    return led_letters[led_id];
+}
+
+void init_colors()
+{
+  for(int i=0; i<64; i++)
+  { led_colors[i] = 100;
+  }
+}
+
+void init_words()
+{
+    int16_t v = variant_clockface;
+    
+    wort_its[0] = matrix_leds[0][0];
+    wort_its[1] = matrix_leds[1][0];
+    wort_its[2] = matrix_leds[2][0];
+
+    wort_oclock[0] = matrix_leds[2][7];
+    wort_oclock[1] = matrix_leds[3][7];
+    wort_oclock[2] = matrix_leds[4][7];
+    wort_oclock[3] = matrix_leds[5][7];
+    wort_oclock[4] = matrix_leds[6][7];
+    wort_oclock[5] = matrix_leds[7][7];
+
+    wort_past[0] = matrix_leds[4][2];
+    wort_past[1] = matrix_leds[5][2];
+    wort_past[2] = matrix_leds[6][2];
+    wort_past[3] = (v==2) ? matrix_leds[6][3] : matrix_leds[7][2];
+
+    wort_to[0] = matrix_leds[6][3];
+    wort_to[1] = matrix_leds[7][2];
+    
+    wort_min_five[0] = matrix_leds[3][1];
+    wort_min_five[1] = matrix_leds[4][1];
+    wort_min_five[2] = matrix_leds[5][1];
+    wort_min_five[3] = matrix_leds[6][1];
+
+    wort_min_ten[0] = matrix_leds[5][0];
+    wort_min_ten[1] = matrix_leds[6][1];
+    wort_min_ten[2] = matrix_leds[7][1];
+
+    wort_min_fifteen[0] = matrix_leds[3][1];
+    wort_min_fifteen[1] = matrix_leds[4][1];
+    wort_min_fifteen[2] = matrix_leds[4][0];
+    wort_min_fifteen[3] = matrix_leds[5][0];
+    wort_min_fifteen[4] = matrix_leds[6][1];
+    wort_min_fifteen[5] = matrix_leds[7][0];
+    wort_min_fifteen[6] = matrix_leds[7][1];
+
+    wort_min_twenty[0] = matrix_leds[5][0];
+    wort_min_twenty[1] = matrix_leds[6][0];
+    wort_min_twenty[2] = matrix_leds[7][0];
+    wort_min_twenty[3] = matrix_leds[0][1];
+    wort_min_twenty[4] = matrix_leds[1][1];
+    wort_min_twenty[5] = matrix_leds[2][1];
+
+    wort_hour_one[0] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
+    wort_hour_one[1] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[6][5] : matrix_leds[5][5];
+    wort_hour_one[2] = (v==0) ? matrix_leds[7][3] : (v==1) ? matrix_leds[7][6] : matrix_leds[5][6];
+
+    wort_hour_two[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
+    wort_hour_two[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
+    wort_hour_two[2] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
+
+    wort_hour_three[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
+    wort_hour_three[1] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[4][5] : matrix_leds[4][4];
+    wort_hour_three[2] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[4][5];
+    wort_hour_three[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
+    wort_hour_three[4] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[6][5];
+
+    wort_hour_four[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[2][6] : matrix_leds[0][4];
+    wort_hour_four[1] = (v==0) ? matrix_leds[1][5] : (v==1) ? matrix_leds[3][6] : matrix_leds[0][5];
+    wort_hour_four[2] = (v==0) ? matrix_leds[2][5] : (v==1) ? matrix_leds[4][6] : matrix_leds[0][6];
+    wort_hour_four[3] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[0][7];
+
+    wort_hour_five[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[1][3] : matrix_leds[3][3];
+    wort_hour_five[1] = (v==0) ? matrix_leds[2][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+    wort_hour_five[2] = (v==0) ? matrix_leds[3][6] : (v==1) ? matrix_leds[1][5] : matrix_leds[2][5];
+    wort_hour_five[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[1][6] : matrix_leds[3][6];
+
+    wort_hour_six[0] = (v==0) ? matrix_leds[0][5] : (v==1) ? matrix_leds[0][5] : matrix_leds[1][5];
+    wort_hour_six[1] = (v==0) ? matrix_leds[0][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[1][6];
+    wort_hour_six[2] = (v==0) ? matrix_leds[0][7] : (v==1) ? matrix_leds[2][3] : matrix_leds[2][6];
+
+    wort_hour_seven[0] = (v==0) ? matrix_leds[4][5] : (v==1) ? matrix_leds[7][3] : matrix_leds[7][3];
+    wort_hour_seven[1] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
+    wort_hour_seven[2] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+    wort_hour_seven[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+    wort_hour_seven[4] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+
+    wort_hour_eight[0] = (v==0) ? matrix_leds[0][4] : (v==1) ? matrix_leds[0][4] : matrix_leds[2][3];
+    wort_hour_eight[1] = (v==0) ? matrix_leds[1][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+    wort_hour_eight[2] = (v==0) ? matrix_leds[2][4] : (v==1) ? matrix_leds[2][4] : matrix_leds[3][4];
+    wort_hour_eight[3] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[3][4] : matrix_leds[4][4];
+    wort_hour_eight[4] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
+
+    wort_hour_nine[0] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[0][3] : matrix_leds[1][4];
+    wort_hour_nine[1] = (v==0) ? matrix_leds[6][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+    wort_hour_nine[2] = (v==0) ? matrix_leds[7][4] : (v==1) ? matrix_leds[2][5] : matrix_leds[3][5];
+    wort_hour_nine[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[3][5] : matrix_leds[3][6];
+
+    wort_hour_ten[0] = (v==0) ? matrix_leds[5][6] : (v==1) ? matrix_leds[5][5] : matrix_leds[4][6];
+    wort_hour_ten[1] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
+    wort_hour_ten[2] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+
+    wort_hour_eleven[0] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
+    wort_hour_eleven[1] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
+    wort_hour_eleven[2] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
+    wort_hour_eleven[3] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+    wort_hour_eleven[4] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+    wort_hour_eleven[5] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+
+    wort_hour_twelve[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
+    wort_hour_twelve[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
+    wort_hour_twelve[2] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
+    wort_hour_twelve[3] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
+    wort_hour_twelve[4] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+    wort_hour_twelve[5] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+}
+
+void init_letters()
+{
+    for(int i=0; i<8; i++)
+    {
+        for(int j=0; j<8; j++)
+        {
+            led_letters[ matrix_leds[i][j] ] = matrix_clockface[i][j];
+        }
+    }
+}
+void createMatrix(int variante)
+{
+  int x=8;
+  int y=8;
+  if(variante==1) 
+  /*
+   * 0  1  2  3  4  5  6  7
+   * 8  9  10 11 12 13 14 15
+   * 16 17 18 19 20 21 22 23
+   * ...
+   */
+  {
+    for(int yi=0; yi<y; yi++)
+    {
+     for(int xi=0; xi<x; xi++)
+      {
+        matrix_leds[xi][yi]= xi + yi*x;
+      }
+    }
+  }
+  else if(variante==2) 
+  /*
+   * 0  1  2  3  4  5  6  7
+   * 15 14 13 12 11 10 9  8
+   * 16 17 18 19 20 21 22 23
+   * ...
+   */
+  {
+    for(int yi=0; yi<y; yi++)
+    {
+      for(int xi=0; xi<x; xi++)
+      {
+        matrix_leds[xi][yi]= xi + yi*x;
+      }
+      yi++;
+      for(int xi=0; xi<x; xi++)
+      {
+        matrix_leds[7-xi][yi]= xi + yi*x;
+      }
+    }
+  }
+}
+
+void turnMatrix(int orientation)
+{
+  if(orientation>0 && orientation <4)
+  {
+    ESP_LOGI(TAG, "Drehe Matrix. Ergebnis:");
+    int16_t matrixTemp[8][8];
+    int x=8;
+    int y=8;
+    for(int yi=0; yi<y; yi++)
+    {
+      for(int xi=0; xi<x; xi++)
+      {
+        if(orientation==1) //turn once clockwise 90degree
+        { matrixTemp[xi][yi] = matrix_leds[x-yi-1][xi]; }
+        
+        else if(orientation==2) //turn twice 90degree
+        { matrixTemp[xi][yi] = matrix_leds[x-xi-1][y-yi-1]; }
+        
+        else if(orientation==3) //turn once counter clockwise 90degree
+        { matrixTemp[xi][yi] = matrix_leds[yi][y-xi-1]; }
+      }
+    }
+    for(int yi=0; yi<y; yi++)
+    {
+      ESP_LOGI(TAG, "");
+      for(int xi=0; xi<x; xi++)
+      { 
+        matrix_leds[xi][yi] = matrixTemp[xi][yi];
+        ESP_LOGI(TAG, "%d", matrix_leds[xi][yi]);
+        ESP_LOGI(TAG, " ");
+      }
+    }
+  }
+}
+
+int get_index_liste_aufbau(int16_t led)
+{
+  if(laenge_liste_aufbau == 0)
+  { return -1; }
+
+  for(int i=0; i<laenge_liste_aufbau; i++)
+  { 
+    if(liste_aufbau[i] == led)
+    { return i; }
+  }
+  return -1;
+}
+
+int get_index_liste_abbau(int16_t led)
+{
+  if(laenge_liste_abbau == 0)
+  { return -1; }
+
+  for(int i=0; i<laenge_liste_abbau; i++)
+  { 
+    if(liste_abbau[i] == led)
+    { return i; }
+  }
+  return -1;
+}
+
+void haenge_an_aufbauliste(int16_t led)
+{
+  ESP_LOGI(TAG, "haenge led %d and aufbaulistenposition %d", led, laenge_liste_aufbau);
+  if(laenge_liste_aufbau<64)
+  {
+    liste_aufbau[laenge_liste_aufbau] = led;
+    laenge_liste_aufbau++;
+  }
+}
+
+void haenge_an_abbauliste(int16_t led)
+{
+  ESP_LOGI(TAG, "haenge led %d and abbaulistenposition %d", led, laenge_liste_abbau);
+  if(laenge_liste_abbau<64)
+  {
+    liste_abbau[laenge_liste_abbau] = led;
+    laenge_liste_abbau++;
+  }
+}
+
+
+void reiheLedsInListe(int16_t wort[], int laenge, int liste)
+{
+  for(int i=0; i<laenge; i++)
+  {
+    int16_t led = wort[i];
+    //char letter = led_letters[led];
+    //ESP_LOGI(TAG, "Reihe %s in Liste %d. Das ist LED %d", letter, liste, led);
+    if(liste==0)
+    {
+        if(led == -1 || get_index_liste_abbau(led) == -1)
+        { haenge_an_abbauliste(led); }
+    }
+    else if(liste==1)
+    {
+        if(led == -1 || get_index_liste_aufbau(led) == -1)
+        { haenge_an_aufbauliste(led); }
+    }
+    else if(liste==2)
+    {
+      if(laenge_liste_effekt<64)
+      {
+        liste_effekt[laenge_liste_effekt] = led;
+        laenge_liste_effekt++;
+      }
+    }
+    else if(liste==3)
+    {
+      if(laenge_liste_nachricht<64)
+      {
+        liste_nachricht[laenge_liste_nachricht] = led;
+        laenge_liste_nachricht++;
+      }
+    }
+  }
+}
+
+
+void reiheDummiesInListe(int anzahl, int liste)
+{
+    int16_t dummies[anzahl];
+    for(int i=0; i<anzahl; i++)
+    { dummies[i] = -1; }
+    reiheLedsInListe(dummies, anzahl, liste);
+}
+
+int berechneHelligkeit(int schritt, int ledIndex, int schrittweite, int offset, int volleHelligkeit, bool aufbau)
+{
+  int neueHelligkeit = (aufbau)? schritt*schrittweite-ledIndex*offset : volleHelligkeit-schritt*schrittweite+ledIndex*offset;
+  return (neueHelligkeit<0)?0:(neueHelligkeit>volleHelligkeit)?volleHelligkeit:neueHelligkeit;
+}
+
+
+void flashLeds()
+{
+    //effektdauert gibt die Anzahl der Schritte an
+    //delay zwischen den Schritten fix
+    //fade out und fade in passieren gleichzeitig
+    //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
+    
+    int normaleHelligkeit = 80;
+    int maximaleHelligkeit = normaleHelligkeit*1.5;
+    maximaleHelligkeit = (maximaleHelligkeit>255)?255:maximaleHelligkeit;
+    int differenz = maximaleHelligkeit - normaleHelligkeit;
+    int neueHelligkeit;
+    //int led;
+    int16_t ledId;
+    int stepsFadeUp=5;
+    int stepsFadeDown=25;
+    int stepsDelay=3;
+    //int runde;
+    int startPoint;
+    int breakPoint;
+    int endPoint;
+    int anzahlLeds = laenge_liste_effekt;
+    int anzahlRunden = (anzahlLeds-1) * stepsDelay + stepsFadeUp + stepsFadeDown + 1;
+    
+    for(int i=0; i<anzahlRunden; i++)
+    {
+      for(int j=0; j<anzahlLeds; j++)
+      {
+        startPoint = j*stepsDelay;
+        breakPoint = startPoint + stepsFadeUp;
+        endPoint = breakPoint + stepsFadeDown;
+        if(i>startPoint and i<=breakPoint)
+        { neueHelligkeit=normaleHelligkeit+(i-startPoint)*(differenz/stepsFadeUp); }
+        else if(i>breakPoint and i<=endPoint)
+        { neueHelligkeit=maximaleHelligkeit-(i-breakPoint)*(differenz/stepsFadeDown); }
+        else
+        { 
+          neueHelligkeit=-1; 
+        }
+
+        if(neueHelligkeit!=-1)
+        {
+          ledId = liste_effekt[j];
+          if(ledId!=-1)
+          { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
+        }
+      }
+      FastLED.delay(50);
+    }      
+}
+
+
+
+
+void fadeLeds()
+{
+/*
+  effektdauert gibt die Anzahl der Schritte an
+  delay zwischen den Schritten fix
+  fade out und fade in passieren gleichzeitig
+  wenn eine einzuschaltende led bereits eingeschaltet 
+  ist, so wird solange heruntergedimmt wie die Helligkeit
+  noch groesser dem aktuellen Zielwert ist
+*/
+    int schrittweiteAufbau = 25;
+    int schrittweiteAbbau = 5;
+    //int aktuelleHelligkeit;
+    int neueHelligkeit;
+    int volleHelligkeit = 80;
+    int16_t ledId;
+    int offsetAufbau=50;
+    int offsetAbbau=10;
+    int ledIndexAbbau;
+    int i=0;
+    bool ausstehenderAufbau = true;
+    bool ausstehenderAbbau = true;
+    
+    while(ausstehenderAufbau or ausstehenderAbbau)
+    {
+      ausstehenderAufbau = false;
+      for(int j=0; j<laenge_liste_aufbau; j++)
+      {     
+        ledId = liste_aufbau[j];
+        neueHelligkeit = berechneHelligkeit(i,j,schrittweiteAufbau,offsetAufbau,volleHelligkeit,true);
+        if(neueHelligkeit<volleHelligkeit)
+        { ausstehenderAufbau = true; }
+        ledIndexAbbau = get_index_liste_abbau(ledId);
+        if(ledIndexAbbau==-1)
+        { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
+        else {
+          int helligkeitAbbau = berechneHelligkeit(i,ledIndexAbbau,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
+          if(neueHelligkeit>helligkeitAbbau)
+          {
+            liste_abbau[ledIndexAbbau]=-1;
+            matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit);
+          }
+        }
+      }
+      
+      ausstehenderAbbau = false;
+      for(int k=0; k<laenge_liste_abbau; k++)
+      {
+        ledId = liste_abbau[k];
+        if(ledId>0)
+        {
+          neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
+          if(neueHelligkeit>0)
+          { ausstehenderAbbau = true; }
+          matrix[ledId].setHSV(led_colors[ledId], 200, neueHelligkeit);
+        }
+      }
+      FastLED.show();
+      vTaskDelay( pdMS_TO_TICKS(50) );
+      i++;
+    }  
+}
+
+void iteriereLedsInListe(int liste, int aktion, bool onebyone, int delay)
+{
+  /*
+  Aktion 0: ausschalten
+  Aktion 1: einschalten
+  Aktion 2: FadeToBlackBy128
+  Aktion 3: grün färben
+  Aktion 4: rot färben
+  */
+
+  /*Serial.println();
+  Serial.print("Iteriere Liste ");
+  Serial.print(liste);
+  Serial.print(" für ");
+  Serial.print((aktion==0)?"Aktion 0: ausschalten":(aktion==1)?"Aktion 1: einschalten":(aktion==2)?"Aktion 2: FadeToBlackBy128":(aktion==3)?"Aktion 3: grün färben":(aktion==4)?"Aktion 3: grün färben":"ungueltige Aktion");
+  Serial.print((onebyone)?" onebyone Delay ":" Delay pro Durchgang ");
+  Serial.print(delay);*/
+
+  int ledId;
+  int laengeListe = (liste==0)?laenge_liste_abbau:(liste==1)?laenge_liste_aufbau:(liste==2)?laenge_liste_effekt:(liste==3)?laenge_liste_nachricht:0;
+
+  for(int i=0; i<laengeListe; i++)
+  {
+    ledId = (liste==0)?liste_abbau[i]:(liste==1)?liste_aufbau[i]:(liste==2)?liste_effekt[i]:(liste==3)?liste_nachricht[i]:-1;
+    
+    if(aktion==0) { matrix[ledId].setHSV(0,0,0); }
+    else if(aktion==1) { matrix[ledId].setHSV(led_colors[ledId], 200, 100); }
+    else if(aktion==2) { matrix[ledId].fadeToBlackBy(128); }
+    else if(aktion==3) { matrix[ledId].setHSV(96, 200, 100); }
+    else if(aktion==4) { matrix[ledId].setHSV(0, 200, 100); }
+    
+    if(onebyone) 
+    { 
+      FastLED.show();
+      vTaskDelay( pdMS_TO_TICKS(150) );
+    }
+  }
+  if(!onebyone) 
+  { 
+    FastLED.show();
+    vTaskDelay( pdMS_TO_TICKS(150) );
+  }
+}
+
+void bearbeiteListe(int modus)
+{
+  if(modus==1) //schalten
+  { 
+    iteriereLedsInListe(0,0,true,100);
+    iteriereLedsInListe(1,1,true,100);
+    laenge_liste_aufbau = 0;
+    laenge_liste_abbau = 0;
+  }
+  if(modus==2) //fade over
+  {
+    fadeLeds();
+    laenge_liste_aufbau = 0;
+    laenge_liste_abbau = 0;
+  }
+  else if(modus==3) //short flash
+  {
+    flashLeds();
+  }
+}
+
+
+void setzeFarbe(uint16_t farbeLeds)
+{
+  /*Serial.println();
+  Serial.print("->Setze Farbe: ");
+  Serial.print(farbeLeds);*/
+  int16_t ledId;
+  for(int i=0; i<laenge_liste_aufbau; i++)
+  { 
+    ledId=liste_aufbau[i];
+    led_colors[ledId] = farbeLeds; 
+  }
+  laenge_liste_aufbau = 0;
+}
+
+void reiheStundenInListe(int stunde, int liste) 
+{
+    switch(stunde) {
+    	case 0: reiheLedsInListe(wort_hour_twelve, 6, liste); break;
+        case 1: reiheLedsInListe(wort_hour_one, 3, liste); break;
+        case 2: reiheLedsInListe(wort_hour_two, 3, liste); break;
+        case 3: reiheLedsInListe(wort_hour_three, 5, liste); break;
+        case 4: reiheLedsInListe(wort_hour_four, 4, liste); break;
+        case 5: reiheLedsInListe(wort_hour_five, 4, liste); break;
+        case 6: reiheLedsInListe(wort_hour_six, 3, liste); break;
+        case 7: reiheLedsInListe(wort_hour_seven, 5, liste); break;
+        case 8: reiheLedsInListe(wort_hour_eight, 5, liste); break;
+        case 9: reiheLedsInListe(wort_hour_nine, 4, liste); break;
+        case 10: reiheLedsInListe(wort_hour_ten, 3, liste); break;
+        case 11: reiheLedsInListe(wort_hour_eleven, 6, liste); break;
+        default: ESP_LOGI(TAG, "unhandled hour"); break;
+    }
+
+}
+
+void reiheWortOclockInListe(int liste)
+{  
+    reiheLedsInListe(wort_oclock, 6, liste);
+}
+
+void reiheWortItsInListe(int liste)
+{
+  reiheLedsInListe(wort_its, 3, liste);
+}
+
+void reiheMinutenInListe(int nMalFuenf, int liste) 
+{
+  //0=0, 1=5, 2=10, 3=15, 4=20, 5=25, 6=30, 7=35, 8=40, 9=45, 10=50, 11=55
+  /*Serial.println();
+  Serial.print("Minute ");
+  Serial.print(nMalFuenf);
+  Serial.print(" in Liste: ");
+  Serial.print(liste);*/
+
+    //„twenty“
+    //20, 25, 35, 40
+  if(nMalFuenf==4 or nMalFuenf==5 or nMalFuenf==7 or nMalFuenf==8)
+  {
+    reiheLedsInListe(wort_min_twenty, 6, liste);
+  }
+  //„five“
+  //5, 25, 35, 55
+  if(nMalFuenf==1 or nMalFuenf==5 or nMalFuenf==7 or nMalFuenf==11)
+  {
+    reiheLedsInListe(wort_min_five, 4, liste);      
+  }
+
+  //„ten“, „fifteen“, „half“
+  //10, 50; 15, 45; 30
+  if(nMalFuenf==2 or nMalFuenf==10)
+  {
+    reiheLedsInListe(wort_min_ten, 3, liste);            
+  }
+  else if(nMalFuenf==3 or nMalFuenf==9)
+  {
+    reiheLedsInListe(wort_min_fifteen, 7, liste);            
+  }
+  else if(nMalFuenf==6)
+  {
+    reiheLedsInListe(wort_min_half, 4, liste);      
+  }
+}
+
+void reihePastOderToInListe(int nMalFuenf, int liste)
+{
+  //past; to
+  //1-5; 6-11
+  
+  if(nMalFuenf>=0 and nMalFuenf<7)
+  { reiheLedsInListe(wort_past, 4, liste); }
+  else if(nMalFuenf>=7 and nMalFuenf<12)
+  { reiheLedsInListe(wort_to, 2, liste); }
+}
+
+static void loop_display(void *pvParameters)
+{
+  while(true)
+  {
+    vTaskDelay( pdMS_TO_TICKS(50) );
+    if(display)
+    {
+      bearbeiteListe(2);
+      display = false;
+    }
+    else
+    { FastLED.show(); }
+  }
+};
+
+static void loop_time(void *pvParameters)
+{
+  letzteMinute=-1;
+  letzteStunde=-1;
+
+  while(true)
+  {
+    for(int tempHour=0; tempHour<12; tempHour++)
+    {
+      for(int tempMinute=0; tempMinute<11; tempMinute++)
+      {
+        while(display)
+        { vTaskDelay( pdMS_TO_TICKS(50) ); }
+        clearLists();
+
+        if(letzteStunde!=-1){ reiheWortItsInListe(0); }//kein Ausblenden wenn vorher keine valide Zeit angezeigt wurde
+        reiheWortItsInListe(1);
+        reiheWortItsInListe(2);
+        reiheDummiesInListe(3,2);
+        
+        if(letzteMinute>0)
+        { 
+          reiheMinutenInListe(letzteMinute,0);
+          reihePastOderToInListe(letzteMinute,0);
+        }
+        
+        if(tempMinute>0)
+        { 
+          reiheMinutenInListe(tempMinute,1);
+          reiheMinutenInListe(tempMinute,2);
+          reiheDummiesInListe(3,2);
+          reihePastOderToInListe(tempMinute,1);
+          reihePastOderToInListe(tempMinute,2);
+          reiheDummiesInListe(3,2);
+        }
+
+        if(letzteStunde!=-1)
+        { reiheStundenInListe(letzteStunde,0); }
+        
+        if(tempHour!=-1)
+        {
+          reiheStundenInListe(tempHour,1);
+          reiheStundenInListe(tempHour,2);
+          reiheDummiesInListe(3,2);
+        }
+        
+        if(letzteMinute==0)
+        { reiheWortOclockInListe(0); }
+        
+        if(tempMinute==0)
+        { 
+          reiheWortOclockInListe(1); 
+          reiheWortOclockInListe(2);
+        }
+
+        display = true;
+        letzteStunde=tempHour;
+        letzteMinute=tempMinute;
+        vTaskDelay( pdMS_TO_TICKS(1000) );
+      }
+    }
+  }
+  /*  ESP_LOGI(TAG, "laenge liste %d", laenge_liste_aufbau);
+    for(int i=0; i<laenge_liste_aufbau; i++)
+    { ESP_LOGI(TAG, "inhalt liste an Index %d: %d", i, liste_aufbau[i]); }
+    reiheWortOclockInListe(1);
+    ESP_LOGI(TAG, "laenge liste %d", laenge_liste_aufbau);
+    for(int i=0; i<laenge_liste_aufbau; i++)
+    { ESP_LOGI(TAG, "inhalt liste an Index %d: %d", i, liste_aufbau[i]); }
+    int16_t ledId;
+
+    for(int i=0; i<laenge_liste_aufbau; i++)
+    {
+      matrix[liste_aufbau[i]].setHSV(80, 200, 100); 
+    }
+    FastLED.show();
+
+    while(true)
+    {
+      FastLED.show();
+      vTaskDelay( pdMS_TO_TICKS(10000) );
+    }*/
+};
+
+
+void app_main() {
+  variant_clockface=0;
+  createMatrix(1);
+  init_colors();
+  init_words();
+  printf(" entering app main, call add leds\n");
+  // the WS2811 family uses the RMT driver
+  //FastLED.addLeds<LED_TYPE, DATA_PIN_1, COLOR_ORDER>(leds1, NUM_LEDS);
+  //FastLED.addLeds<LED_TYPE, DATA_PIN_2, COLOR_ORDER>(leds2, NUM_LEDS);
+  FastLED.addLeds<LED_TYPE, DATA_PIN_1>(matrix, 64);
+  // this is a good test because it uses the GPIO ports, these are 4 wire not 3 wire
+  //FastLED.addLeds<APA102, 13, 15>(leds, NUM_LEDS);
+
+
+/* start the wifi manager */
+	wifi_manager_start();
+
+	/* register a callback as an example to how you can integrate your code with the wifi manager */
+	wifi_manager_set_callback(WM_EVENT_STA_GOT_IP, &cb_connection_ok);
+
+	/* your code should go here. Here we simply create a task on core 2 that monitors free heap memory */
+	//xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
+
+  printf(" set max power\n");
+  // I have a 2A power supply, although it's 12v
+  FastLED.setMaxPowerInVoltsAndMilliamps(12,2000);
+
+  // change the task below to one of the functions above to try different patterns
+  printf("create task for led blinking\n");
+
+  //xTaskCreatePinnedToCore(&blinkLeds_simple, "blinkLeds", 4000, NULL, 5, NULL, 0);
+  //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
+  //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
+  xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
+  xTaskCreatePinnedToCore(&loop_display, "loop display", 4000, NULL, 5, NULL, 0);
+  //xTaskCreatePinnedToCore(&blinkLeds_chase, "blinkLeds", 4000, NULL, 5, NULL, 0);
+  //xTaskCreatePinnedToCore(&blinkLeds_chase2, "blinkLeds", 4000, NULL, 5, NULL, 0);
+}
