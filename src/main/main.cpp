@@ -49,6 +49,8 @@ int16_t currentHour;
 int16_t lastMinute=-1;
 //ESP_LOGI(TAG, "create display");
 Display my_display(26, 1, 0);
+bool config_exists = false;
+my_config* valid_config;
 //ESP_LOGI(TAG, "created display");
 bool display = false;
 
@@ -94,10 +96,11 @@ void cb_connection_ok(void *pvParameter){
 void cb_received_config(void *pvParameter){
   ESP_LOGI(TAG, "callback received_config");
 
-	my_config* new_config = (my_config*)pvParameter;
+	valid_config = (my_config*)pvParameter;
   ESP_LOGI(TAG, "casted to my_config");
-  int16_t current_hour = new_config->hour;
+  int16_t current_hour = valid_config->hour;
   ESP_LOGI(TAG, "got hour from config %d", current_hour);
+  config_exists = true;
 }
 
 static void loop_time(void *pvParameters)
@@ -117,22 +120,32 @@ static void loop_time(void *pvParameters)
 
     for(int tempHour=0; tempHour<12; tempHour++)
     {
+      
       ESP_LOGI(TAG, "call get_hour");
-      int16_t current_config_hour = get_hour();
-      if(current_config_hour!=-1)
-      { ESP_LOGI(TAG, "got hour from config %d", current_config_hour); }
-      if(current_config_hour != config_hour)
+      if(config_exists)
       {
-        config_hour = current_config_hour;
-        tempHour = config_hour;
+        int16_t current_config_hour = valid_config->hour;
+        ESP_LOGI(TAG, "got hour from config %d", current_config_hour);
       }
+      
       for(int tempMinute=0; tempMinute<11; tempMinute++)
       {
+        my_display.mode = 0; //disable animation
+        while(my_display.mode == 0)
+        { 
+          vTaskDelay( pdMS_TO_TICKS(50) ); //wait for animation to end, display will set mode to -1
+        }
         
-        display = true;
         my_display.stelle_zeit(letzteStunde, letzteMinute, tempHour, tempMinute);
-        my_display.bearbeiteListe(2);
-        display = false;
+        
+        my_display.mode = 2;
+        while(my_display.mode == 2)
+        { 
+          vTaskDelay( pdMS_TO_TICKS(50) ); //wait for setting to end, display will set mode to -1
+        }
+
+        my_display.mode = 3;
+        
         letzteStunde=tempHour;
         letzteMinute=tempMinute;
         vTaskDelay( pdMS_TO_TICKS(1000) );
@@ -141,7 +154,11 @@ static void loop_time(void *pvParameters)
   }
 }
 
-
+static void start_loop_display(void *pvParameters)
+{
+  ESP_LOGI(TAG, "Call my_display.loop_display")
+  my_display.loop_display();
+}
 
 void app_main() {
   
@@ -181,6 +198,8 @@ void app_main() {
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
+  xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, 1, NULL, 0);
+  
   //xTaskCreatePinnedToCore(&loop_display, "loop time", 4000, NULL, 5, NULL, 0);
 
   //xTaskCreatePinnedToCore(&blinkLeds_chase, "blinkLeds", 4000, NULL, 5, NULL, 0);

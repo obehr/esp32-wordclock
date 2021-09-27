@@ -581,6 +581,7 @@ class Display {
   }
 
   public:
+    mode = 0; //0 = wait, 1 = set time, 2 = animate
     Display(int data_pin, int variant, int orientation) {
       ESP_LOGI(TAG2, "construct display");
       init_matrix(variant);
@@ -595,6 +596,23 @@ class Display {
       
       FastLED.addLeds<LED_TYPE, DATA_PIN_1>(matrix, 64);
       FastLED.setMaxPowerInVoltsAndMilliamps(12,2000);
+    }
+
+    void loop_display()
+    {
+      while(true)
+      {
+        if(modus > 0)
+        { 
+          bearbeiteListe(modus);
+        }
+        else if(modus == 0)
+        { 
+          ESP_LOGI(TAG2, "Command to stop animation. Confirm with -1");
+          modus = -1; 
+        }
+        vTaskDelay( pdMS_TO_TICKS(1000) );
+      }
     }
     
     void stelle_zeit(int letzte_stunde, int letzte_minute, int aktuelle_stunde, int aktuelle_minute) {
@@ -634,27 +652,29 @@ class Display {
         }
     }
 
-    void bearbeiteListe(int modus)
+    void bearbeiteListe()
     {
-      ESP_LOGI(TAG2, "bearbeite Liste %d", modus);
-      if(modus==1) //schalten
+      ESP_LOGI(TAG2, "bearbeite Liste %d", mode);
+      if(mode==1) //schalten
       { 
         iteriereLedsInListe(0,0,true,100);
         iteriereLedsInListe(1,1,true,100);
         liste_aufbau.clear();
         liste_abbau.clear();
+        mode = -1;
       }
-      if(modus==2) //fade over
+      if(mode==2) //fade over
       {
         fadeLeds();
         liste_aufbau.clear();
         liste_abbau.clear();
+        mode = -1;
       }
-      else if(modus==3) //short flash
+      else if(mode==3) //animate leds in list 3
       {
         flashLeds();
       }
-      ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", modus);
+      ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", mode);
     }
 
     void show() {
