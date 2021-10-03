@@ -370,7 +370,7 @@ class Display {
         int endPoint;
         int anzahlLeds = liste_effekt.length;
         int anzahlRunden = (anzahlLeds-1) * stepsDelay + stepsFadeUp + stepsFadeDown + 1;
-        
+
         for(int i=0; i<anzahlRunden; i++)
         {
           for(int j=0; j<anzahlLeds; j++)
@@ -394,7 +394,8 @@ class Display {
               { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
             }
           }
-          FastLED.delay(50);
+          vTaskDelay( pdMS_TO_TICKS(50) );
+          FastLED.show();
         }      
     }
 
@@ -581,7 +582,7 @@ class Display {
   }
 
   public:
-    mode = 0; //0 = wait, 1 = set time, 2 = animate
+    int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
     Display(int data_pin, int variant, int orientation) {
       ESP_LOGI(TAG2, "construct display");
       init_matrix(variant);
@@ -602,16 +603,16 @@ class Display {
     {
       while(true)
       {
-        if(modus > 0)
+        if(mode > 0)
         { 
-          bearbeiteListe(modus);
+          bearbeiteListe();
         }
-        else if(modus == 0)
+        else if(mode == 0)
         { 
           ESP_LOGI(TAG2, "Command to stop animation. Confirm with -1");
-          modus = -1; 
+          mode = -1; 
         }
-        vTaskDelay( pdMS_TO_TICKS(1000) );
+          vTaskDelay( pdMS_TO_TICKS(2000) );
       }
     }
     

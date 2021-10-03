@@ -15,18 +15,23 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "esp_sntp.h"
-
-
 #include <string.h>
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_attr.h"
+#include "esp_sleep.h"
+
 #include <esp_wifi.h>
 #include <esp_netif.h>
-#include "esp_log.h"
 
 #include "wifi_manager.h"
 #include "http_app.h"
 
 #include "display.cpp"
 #include "config.cpp"
+//#include "sntp.cpp"
 
 static const char TAG[] = "wordclock";
 
@@ -50,7 +55,7 @@ int16_t lastMinute=-1;
 //ESP_LOGI(TAG, "create display");
 Display my_display(26, 1, 0);
 bool config_exists = false;
-my_config* valid_config;
+my_config* current_config;
 //ESP_LOGI(TAG, "created display");
 bool display = false;
 
@@ -58,6 +63,7 @@ extern "C" {
   void app_main();
 }
 
+time_t now;
 
 
 /**
@@ -73,6 +79,70 @@ extern "C" {
 /**
  * @brief this is an exemple of a callback that you can setup in your own app to get notified of wifi manager event.
  */
+
+
+void cb_received_config(void *pvParameter){
+  ESP_LOGI(TAG, "callback received_config");
+
+	current_config = (my_config*)pvParameter;
+  ESP_LOGI(TAG, "casted to my_config");
+  int16_t current_hour = current_config->hour;
+  ESP_LOGI(TAG, "got hour from config %d", current_hour);
+  config_exists = true;
+}
+
+
+void time_sync_notification_cb(struct timeval *tv)
+{
+    ESP_LOGI(TAG, "Notification of a time synchronization event");
+    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+    {
+        ESP_LOGI(TAG, "Time was synched (again)");
+        
+        struct tm timeinfo;
+        char strftime_buf[64];
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        ESP_LOGI(TAG, "The time after verified sync: %s", strftime_buf);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Time sync process is ongoing or was reset");
+    }
+}
+
+void initialize_sntp()
+{
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "fritz.box");
+    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+
+    sntp_init();
+}
+
+bool wait_for_sync()
+{
+    int retry = 0;
+    const int retry_count = 10;
+    while (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED && ++retry < retry_count) {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+    {
+        ESP_LOGI(TAG, "Time was retrieved");
+        return true;
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Time sync process is ongoing or was reset");
+        return false;
+    }
+    
+}
+
 void cb_connection_ok(void *pvParameter){
 	ip_event_got_ip_t* param = (ip_event_got_ip_t*)pvParameter;
 
@@ -82,81 +152,135 @@ void cb_connection_ok(void *pvParameter){
 
 	ESP_LOGI(TAG, "I have a connection and my IP is %s!", str_ip);
 
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, "fritz.box");
-  sntp_init();
   time_t now;
-  char strftime_buf[64];
   struct tm timeinfo;
+  char strftime_buf[64];
+
+  time(&now);
   localtime_r(&now, &timeinfo);
   strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-  ESP_LOGI(TAG, "The current date/time in Berlin is: %s", strftime_buf);
+  ESP_LOGI(TAG, "The time before sntp setup is: %s", strftime_buf);
+
+  ESP_LOGI(TAG, "Get time over NTP");
+  initialize_sntp();
 }
 
-void cb_received_config(void *pvParameter){
-  ESP_LOGI(TAG, "callback received_config");
-
-	valid_config = (my_config*)pvParameter;
-  ESP_LOGI(TAG, "casted to my_config");
-  int16_t current_hour = valid_config->hour;
-  ESP_LOGI(TAG, "got hour from config %d", current_hour);
-  config_exists = true;
-}
-
-static void loop_time(void *pvParameters)
-{
-  letzteMinute=-1;
-  letzteStunde=-1;
-  int16_t config_hour = -1;
+static void print_time(void *pvParameters)
+{ 
   while(true)
   {
-    
-    time_t now;
     char strftime_buf[64];
     struct tm timeinfo;
+    time(&now);
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time in Berlin is: %s", strftime_buf);
-
-    for(int tempHour=0; tempHour<12; tempHour++)
-    {
-      
-      ESP_LOGI(TAG, "call get_hour");
-      if(config_exists)
-      {
-        int16_t current_config_hour = valid_config->hour;
-        ESP_LOGI(TAG, "got hour from config %d", current_config_hour);
-      }
-      
-      for(int tempMinute=0; tempMinute<11; tempMinute++)
-      {
-        my_display.mode = 0; //disable animation
-        while(my_display.mode == 0)
-        { 
-          vTaskDelay( pdMS_TO_TICKS(50) ); //wait for animation to end, display will set mode to -1
-        }
-        
-        my_display.stelle_zeit(letzteStunde, letzteMinute, tempHour, tempMinute);
-        
-        my_display.mode = 2;
-        while(my_display.mode == 2)
-        { 
-          vTaskDelay( pdMS_TO_TICKS(50) ); //wait for setting to end, display will set mode to -1
-        }
-
-        my_display.mode = 3;
-        
-        letzteStunde=tempHour;
-        letzteMinute=tempMinute;
-        vTaskDelay( pdMS_TO_TICKS(1000) );
-      }
-    }
+    vTaskDelay( pdMS_TO_TICKS(10000) );
   }
 }
 
+
+static void loop_time(void *pvParameters)
+{
+  char strftime_buf[64];
+  struct tm timeinfo;
+  
+  //wait until time is set
+  while(true)
+  {
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    if(timeinfo.tm_year > 120)
+    { break; }
+    ESP_LOGI(TAG, "The time is not yet set %d", timeinfo.tm_year);
+    vTaskDelay( pdMS_TO_TICKS(10000) );
+  }
+
+  
+  uint16_t letzte_fuenfminute =- 1;
+  uint16_t letzte_stunde =- 1;
+  uint16_t aktuelle_fuenfminute;
+  uint16_t aktuelle_stunde;
+
+  //eternal loop
+  while(true)
+  {
+    char strftime_buf[64];
+    struct tm timeinfo;
+    
+    //wait until display time changed
+    while(true)
+    {
+      time(&now);
+      localtime_r(&now, &timeinfo);
+      
+      aktuelle_fuenfminute = (timeinfo.tm_min+2)%60/5;
+      aktuelle_stunde = (aktuelle_fuenfminute < 6)?timeinfo.tm_hour%12:(timeinfo.tm_hour+1)%12;
+
+      if(aktuelle_fuenfminute != letzte_fuenfminute || aktuelle_stunde != letzte_stunde)
+      {
+        break;
+      }
+      ESP_LOGI(TAG, "The display time has not changed %d : %d", aktuelle_stunde, aktuelle_fuenfminute);
+      vTaskDelay( pdMS_TO_TICKS(10000) );
+    }
+    
+    ESP_LOGI(TAG, "set disply time to %d : %d", aktuelle_stunde, aktuelle_fuenfminute);
+    my_display.mode = 0; //disable animation
+    while(my_display.mode == 0)
+    { 
+      vTaskDelay( pdMS_TO_TICKS(50) ); //wait for animation to end, display will set mode to -1
+    }
+    
+    my_display.stelle_zeit(letzte_stunde, letzte_fuenfminute, aktuelle_stunde, aktuelle_fuenfminute);
+    
+    my_display.mode = 2;
+    while(my_display.mode == 2)
+    { 
+      vTaskDelay( pdMS_TO_TICKS(50) ); //wait for setting to end, display will set mode to -1
+    }
+
+    my_display.mode = 3;
+    
+    letzte_stunde = aktuelle_stunde;
+    letzte_fuenfminute = aktuelle_fuenfminute;
+  }
+}
+
+/*bool synched=false;
+  while(!synched)
+  {
+    time_t now;
+    struct tm timeinfo;
+    char strftime_buf[64];
+
+    if(wait_for_sync())
+    {
+      ESP_LOGI(TAG, "Now it is in sync");
+      
+      localtime_r(&now, &timeinfo);
+      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+      ESP_LOGI(TAG, "The current date/time in New York is: %s", strftime_buf);
+      synched=true;
+    }
+    else
+    {
+      localtime_r(&now, &timeinfo);
+      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+      ESP_LOGI(TAG, "Finally failed");
+      if (timeinfo.tm_year < (2016 - 1900)) {
+          ESP_LOGI(TAG, "The time is still out of range: %s", strftime_buf);
+      }
+      else {
+          ESP_LOGI(TAG, "Time is in range, though: %s", strftime_buf);
+          synched = true;
+      }
+    }
+  }*/
+
 static void start_loop_display(void *pvParameters)
 {
-  ESP_LOGI(TAG, "Call my_display.loop_display")
+  ESP_LOGI(TAG, "Call my_display.loop_display");
   my_display.loop_display();
 }
 
@@ -170,17 +294,14 @@ void app_main() {
 
   // this is a good test because it uses the GPIO ports, these are 4 wire not 3 wire
   //FastLED.addLeds<APA102, 13, 15>(leds, NUM_LEDS);
-  time_t now;
-  char strftime_buf[64];
-  struct tm timeinfo;
 
-  time(&now);
+ 
+
   setenv("TZ", "UTC-2", 1);
   tzset();
 
-  localtime_r(&now, &timeinfo);
-  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-  ESP_LOGI(TAG, "The current date/time in Berlin is: %s", strftime_buf);
+  
+
 /* start the wifi manager */
 	wifi_manager_start();
 	/* register a callback as an example to how you can integrate your code with the wifi manager */
@@ -190,7 +311,6 @@ void app_main() {
 	/* your code should go here. Here we simply create a task on core 2 that monitors free heap memory */
 	//xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
 
-  // I have a 2A power supply, although it's 12v
 
 
 
@@ -198,9 +318,10 @@ void app_main() {
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
-  xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);
   
   //xTaskCreatePinnedToCore(&loop_display, "loop time", 4000, NULL, 5, NULL, 0);
+  xTaskCreatePinnedToCore(&print_time, "print time", 4000, NULL, 5, NULL, 0);
 
   //xTaskCreatePinnedToCore(&blinkLeds_chase, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkLeds_chase2, "blinkLeds", 4000, NULL, 5, NULL, 0);
