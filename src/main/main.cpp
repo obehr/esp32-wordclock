@@ -89,6 +89,19 @@ void cb_received_config(void *pvParameter){
   int16_t current_hour = current_config->hour;
   ESP_LOGI(TAG, "got hour from config %d", current_hour);
   config_exists = true;
+
+  if(current_config->time_changed)
+  {
+    ESP_LOGI(TAG, "got new time config: %d, %d, %d", current_config->hour ,current_config->minute, current_config->use_ntp);
+    current_config->time_changed = false;
+  }
+  if(current_config->color_changed)
+  {
+    ESP_LOGI(TAG, "got new colors: %d, %d, %d, %d", current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
+    my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
+    current_config->color_changed = false;
+  }
+  
 }
 
 
@@ -294,8 +307,12 @@ void app_main() {
 
   // this is a good test because it uses the GPIO ports, these are 4 wire not 3 wire
   //FastLED.addLeds<APA102, 13, 15>(leds, NUM_LEDS);
-
- 
+  current_config = (my_config*)get_config();
+  ESP_LOGI(TAG, "casted to my_config");
+  int16_t current_hour = current_config->hour;
+  ESP_LOGI(TAG, "got hour from config %d", current_hour);
+  config_exists = true;
+  
 
   setenv("TZ", "UTC-2", 1);
   tzset();
@@ -317,7 +334,7 @@ void app_main() {
   //xTaskCreatePinnedToCore(&blinkLeds_simple, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
-  my_display.setze_farben(100,100,100,100);
+  my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
   
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);

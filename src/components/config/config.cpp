@@ -13,41 +13,178 @@
 static const char TAG3[] = "config";
 
 typedef struct {
-  int16_t hour;
-  int16_t minute;
+  uint16_t hour;
+  uint16_t minute;
   bool use_ntp;
+  uint16_t color_its_oclock;
+  uint16_t color_minutes;
+  uint16_t color_past_to;
+  uint16_t color_hours;
+  uint16_t saturation;
+  uint16_t brightness;
+  bool time_changed;
+  bool color_changed;
 } my_config;
+
+static bool config_available = false;
 
 static my_config valid_config;
 
-//static char config_raw[300];
-static int16_t hour_config = -1;
-
-int16_t variant_led_numbering;
-int16_t variant_clockface;
-int16_t orientation;
-
-static int16_t get_hour()
-{
-  ESP_LOGI(TAG3, "get_hour");
-  ESP_LOGI(TAG3, "get_hour called and returned %d", valid_config.hour);
-  return valid_config.hour;
-}
+static my_config default_config;
 
 static void* get_config()
 {
-  ESP_LOGI(TAG3, "get_config called");
-  return (void*)&valid_config;
+  if(config_available)
+  {
+    ESP_LOGI(TAG3, "Passing valid config");
+    return (void*)&valid_config;
+  }
+  else
+  {
+    default_config.hour = 0;
+    default_config.minute = 0;
+    default_config.use_ntp = false;
+    default_config.color_its_oclock = 50;
+    default_config.color_minutes = 100;
+    default_config.color_past_to = 150;
+    default_config.color_hours = 200;
+    default_config.saturation = 255;
+    default_config.brightness = 100;
+    default_config.time_changed = false;
+    default_config.color_changed = false;
+    
+    
+    ESP_LOGI(TAG3, "Passing default config");
+    return (void*)&default_config;
+  }
+}
+
+static int16_t get_number(cJSON *json_object)
+{
+  if(strcmp(json_object->valuestring, "") != 0)
+  {
+    int16_t casted_object = atoi(json_object->valuestring);
+    if(casted_object > 0)
+    { 
+      return casted_object;
+    }
+  }
+  return -1;
 }
 
 static void save_config(char *config_raw, size_t length)
 {
+  /*
+  {
+    "ntpUse":"0",
+    "hour":"22",
+    "minute":"22",
+    "wifiConnect":"0",
+    "ssid":"",
+    "password":"",
+    "ntpServer":"",
+    "c1":"0",
+    "c2":"32",
+    "c3":"64",
+    "c4":"96",
+    "sat":"167",
+    "bri":"210"
+  }
+  */
+
+  if(!config_available)
+  {
+    valid_config.hour = default_config.hour;
+    valid_config.minute = default_config.minute;
+    valid_config.use_ntp = default_config.use_ntp;
+    valid_config.color_its_oclock = default_config.color_its_oclock;
+    valid_config.color_minutes = default_config.color_minutes;
+    valid_config.color_past_to = default_config.color_past_to;
+    valid_config.color_hours = default_config.color_hours;
+    valid_config.saturation = default_config.saturation;
+    valid_config.brightness = default_config.brightness;
+  }
+
   cJSON *json = cJSON_ParseWithLength(config_raw, length);
   char *string = cJSON_Print(json);
   ESP_LOGI(TAG3, "parsed json %s", string);
   //cJSON *root = cJSON_Parse(content);
   //content[recv_size] = '\0';
-  cJSON *hour_json = cJSON_GetObjectItemCaseSensitive(json, "hour");
+
+  bool time_changed = false;
+  bool color_changed = false;
+
+  int16_t value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "hour"));
+  if(value_casted != -1 && value_casted < 24 && value_casted != valid_config.hour)
+  {
+    valid_config.hour = value_casted;
+    time_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "minute"));
+  if(value_casted != -1 && value_casted < 24 && value_casted != valid_config.minute)
+  {
+    valid_config.minute = value_casted;
+    time_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "ntpUse"));
+  if((value_casted == 0 || value_casted == 1) && value_casted != valid_config.use_ntp)
+  {
+    valid_config.use_ntp = value_casted;
+    time_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c1"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_its_oclock)
+  {
+    valid_config.color_its_oclock = value_casted;
+    color_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c2"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_minutes)
+  {
+    valid_config.color_minutes = value_casted;
+    color_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c3"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_past_to)
+  {
+    valid_config.color_past_to = value_casted;
+    color_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c4"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_hours)
+  {
+    valid_config.color_hours = value_casted;
+    color_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "bri"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.brightness)
+  {
+    valid_config.brightness = value_casted;
+    color_changed = true;
+  }
+
+  value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "sat"));
+  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.saturation)
+  {
+    valid_config.saturation = value_casted;
+    color_changed = true;
+  }
+
+
+  valid_config.time_changed = time_changed;
+  valid_config.color_changed = color_changed;
+  config_available = color_changed || time_changed;
+
+  /*
+  uint16_t minute_casted = atoi(minute_json->valuestring);
+  bool use_ntp_casted = (atoi(minute_json->valuestring) == 1);
   if(cJSON_IsNumber(hour_json))
   {
       ESP_LOGI(TAG3,"is a number");
@@ -63,6 +200,6 @@ static void save_config(char *config_raw, size_t length)
   //char *value_string = hour_json->valuestring;
   ESP_LOGI(TAG3, "value is %s", hour_json->valuestring);
   ESP_LOGI(TAG3, "value is %d", valid_config.hour);
-
+  */
 }
 
