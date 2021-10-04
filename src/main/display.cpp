@@ -10,19 +10,19 @@
 
 //#define NUM_LEDS 512
 #define NUM_LEDS 64
-#define DATA_PIN_1 26
-#define DATA_PIN_2 19
+#define DATA_PIN 26
 #define BRIGHTNESS  80
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
+#define VARIANT_LED_NUMBERING 1
+#define VARIANT_CLOCKFACE 1
+#define ORIENTATION 0
 
 static const char TAG2[] = "display";
 
 class Display {
   private:
-    int16_t variant_led_numbering;
-    int16_t variant_clockface;
-    int16_t orientation;
+
     int16_t wort_its[3];
     int16_t wort_oclock[6];
     int16_t wort_past[4];
@@ -47,10 +47,10 @@ class Display {
 
     int16_t matrix_leds[8][8];
     char led_letters[64];
-    uint16_t led_colors[64];
+    uint16_t led_colors[64] = {0};
     
 
-    const char matrix_clockface[8][8] = 
+    const char matrix_clockface_v1[8][8] = 
     {
       {'i', 't', 's', 'o', 'f', 't', 'w', 'e'},
       {'n', 't', 'y', 'f', 'i', 'v', 'e', 'n'},
@@ -60,6 +60,30 @@ class Display {
       {'s', 'o', 'u', 'r', 's', 'e', 'v', 'e'},
       {'i', 'f', 'i', 'v', 'e', 't', 'e', 'n'},
       {'x', 'n', 'o', 'c', 'l', 'o', 'c', 'k'}
+    };
+
+    const char matrix_clockface_v2[8][8] = 
+    {
+      { 'i', 't', 's', 'o', 'f', 't', 'w', 'e' },
+      { 'n', 't', 'y', 'f', 'i', 'v', 'e', 'n' },
+      { 'h', 'a', 'l', 'f', 'p', 'a', 's', 'o' },
+      { 'n', 'f', 'x', 't', 'w', 'e', 't', 's' },
+      { 'e', 'i', 'g', 'h', 't', 'o', 'l', 'e' },
+      { 's', 'v', 'n', 'e', 'h', 't', 'n', 'v' },
+      { 'w', 'f', 'f', 'o', 'u', 'r', 'e', 'e' },
+      { 'o', 'c', 'l', 'o', 'c', 'k', 'f', 'n' }
+    };
+
+    const char matrix_clockface_v3[8][8] = 
+    {
+      { 'i', 't', 's', 'o', 'f', 't', 'w', 'e' },
+      { 'n', 't', 'y', 'f', 'i', 'v', 'e', 'n' },
+      { 'h', 'a', 'l', 'f', 'p', 'a', 's', 't' },
+      { 't', 'o', 'e', 'f', 't', 'w', 'e', 's' },
+      { 'f', 'n', 'i', 'g', 'h', 'o', 'l', 'e' },
+      { 'o', 's', 'v', 'n', 'r', 'n', 'e', 'v' },
+      { 'u', 'i', 'x', 'e', 't', 'e', 'n', 'e' },
+      { 'r', 'n', 'o', 'c', 'l', 'o', 'c', 'k' }
     };
 
     CRGBArray<64> matrix;
@@ -91,17 +115,8 @@ class Display {
     ## Setup function ##
     ####################
     */
-    void init_colors()
-    {
-      for(int i=0; i<64; i++)
-      { led_colors[i] = 100;
-      }
-    }
-
-    void init_words()
-    {
-        int16_t v = variant_clockface;
-        
+    void init_words(int16_t v)
+    {        
         wort_its[0] = matrix_leds[0][0];
         wort_its[1] = matrix_leds[1][0];
         wort_its[2] = matrix_leds[2][0];
@@ -209,13 +224,13 @@ class Display {
         wort_hour_twelve[5] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
     }
 
-    void init_letters()
+    void init_letters(int16_t variante)
     {
         for(int i=0; i<8; i++)
         {
             for(int j=0; j<8; j++)
             {
-                led_letters[ matrix_leds[i][j] ] = matrix_clockface[i][j];
+              led_letters[ matrix_leds[i][j] ] = (variante == 1) ? matrix_clockface_v1[i][j] : (variante == 2) ? matrix_clockface_v2[i][j] : matrix_clockface_v3[i][j];
             }
         }
     }
@@ -264,7 +279,7 @@ class Display {
       }
     }
 
-    void turnMatrix(int orientation)
+    void turn_matrix(int orientation)
     {
       if(orientation>0 && orientation <4)
       {
@@ -299,16 +314,16 @@ class Display {
       }
     }
 
-    void setzeFarbe(uint16_t farbeLeds)
+    void setze_farbe_in_liste(uint16_t farbe)
     {
       /*Serial.println();
       Serial.print("->Setze Farbe: ");
       Serial.print(farbeLeds);*/
-      int16_t ledId;
+      int16_t led_id;
       for(int i=0; i<liste_aufbau.length; i++)
       { 
-        ledId=liste_aufbau.get_item(i);
-        led_colors[ledId] = farbeLeds; 
+        led_id = liste_aufbau.get_item(i);
+        led_colors[led_id] = farbe;
       }
       liste_aufbau.clear();
     }
@@ -583,19 +598,17 @@ class Display {
 
   public:
     int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
-    Display(int data_pin, int variant, int orientation) {
+    Display()
+    {
       ESP_LOGI(TAG2, "construct display");
-      init_matrix(variant);
-      if(orientation >0 && orientation <4) {
-        turnMatrix(orientation);
-      }
-      ESP_LOGI(TAG2, "created matrix %d", matrix[3][2]);
-      init_colors();
-      init_words();
-      init_letters();
-
+      init_matrix(VARIANT_LED_NUMBERING);
+      turn_matrix(ORIENTATION);
       
-      FastLED.addLeds<LED_TYPE, DATA_PIN_1>(matrix, 64);
+      ESP_LOGI(TAG2, "created matrix %d", matrix[3][2]);
+      init_words(VARIANT_CLOCKFACE);
+      init_letters(VARIANT_CLOCKFACE);
+      
+      FastLED.addLeds<LED_TYPE, DATA_PIN>(matrix, 64);
       FastLED.setMaxPowerInVoltsAndMilliamps(12,2000);
     }
 
@@ -678,7 +691,29 @@ class Display {
       ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", mode);
     }
 
-    void show() {
-        FastLED.show();
+    void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours)
+    {
+      ESP_LOGI(TAG2, "set colors to %d, %d, %d, %d", color_its_oclock, color_minutes, color_past_to, color_hours);
+      bool aufbau[3] = {false, true, false};
+        
+      reihe_leds_in_listen(wort_its, 3, aufbau);
+      reihe_leds_in_listen(wort_oclock, 6, aufbau);
+      setze_farbe_in_liste(color_its_oclock);
+
+      for(int i=1; i<12; i++)
+      {  
+        reihe_minuten_in_listen(i, aufbau); 
+      }
+      setze_farbe_in_liste(color_minutes);
+
+      reihe_leds_in_listen(wort_past, 4, aufbau);
+      reihe_leds_in_listen(wort_to, 2, aufbau);
+      setze_farbe_in_liste(color_past_to);
+
+      for(int i=1; i<12; i++)
+      {  
+        reihe_stunden_in_listen(i, aufbau); 
+      }
+      setze_farbe_in_liste(color_hours);
     }
 };

@@ -53,7 +53,7 @@ int16_t currentHour;
 
 int16_t lastMinute=-1;
 //ESP_LOGI(TAG, "create display");
-Display my_display(26, 1, 0);
+Display my_display{};
 bool config_exists = false;
 my_config* current_config;
 //ESP_LOGI(TAG, "created display");
@@ -317,6 +317,8 @@ void app_main() {
   //xTaskCreatePinnedToCore(&blinkLeds_simple, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
+  my_display.setze_farben(100,100,100,100);
+  
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);
   
