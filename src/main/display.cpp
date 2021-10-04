@@ -15,8 +15,8 @@
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
 #define VARIANT_LED_NUMBERING 1
-#define VARIANT_CLOCKFACE 1
-#define ORIENTATION 0
+#define VARIANT_CLOCKFACE 2
+#define ORIENTATION 3
 
 static const char TAG2[] = "display";
 
@@ -93,7 +93,7 @@ class Display {
     List liste_effekt;
     List liste_nachricht;
 
-    void clearLists(void)
+    void clear_lists(void)
     {
       liste_abbau.clear();
       liste_aufbau.clear();
@@ -116,112 +116,120 @@ class Display {
     ####################
     */
     void init_words(int16_t v)
-    {        
-        wort_its[0] = matrix_leds[0][0];
-        wort_its[1] = matrix_leds[1][0];
-        wort_its[2] = matrix_leds[2][0];
+    {     
 
-        wort_oclock[0] = matrix_leds[2][7];
-        wort_oclock[1] = matrix_leds[3][7];
-        wort_oclock[2] = matrix_leds[4][7];
-        wort_oclock[3] = matrix_leds[5][7];
-        wort_oclock[4] = matrix_leds[6][7];
-        wort_oclock[5] = matrix_leds[7][7];
-
-        wort_past[0] = matrix_leds[4][2];
-        wort_past[1] = matrix_leds[5][2];
-        wort_past[2] = matrix_leds[6][2];
-        wort_past[3] = (v==2) ? matrix_leds[6][3] : matrix_leds[7][2];
-
-        wort_to[0] = matrix_leds[6][3];
-        wort_to[1] = matrix_leds[7][2];
+      ESP_LOGI(TAG2, "Init Words for variant %d", v);
         
-        wort_min_five[0] = matrix_leds[3][1];
-        wort_min_five[1] = matrix_leds[4][1];
-        wort_min_five[2] = matrix_leds[5][1];
-        wort_min_five[3] = matrix_leds[6][1];
+      wort_its[0] = matrix_leds[0][0];
+      wort_its[1] = matrix_leds[1][0];
+      wort_its[2] = matrix_leds[2][0];
 
-        wort_min_ten[0] = matrix_leds[5][0];
-        wort_min_ten[1] = matrix_leds[6][1];
-        wort_min_ten[2] = matrix_leds[7][1];
+      wort_oclock[0] = matrix_leds[2][7];
+      wort_oclock[1] = matrix_leds[3][7];
+      wort_oclock[2] = matrix_leds[4][7];
+      wort_oclock[3] = matrix_leds[5][7];
+      wort_oclock[4] = matrix_leds[6][7];
+      wort_oclock[5] = matrix_leds[7][7];
 
-        wort_min_fifteen[0] = matrix_leds[3][1];
-        wort_min_fifteen[1] = matrix_leds[4][1];
-        wort_min_fifteen[2] = matrix_leds[4][0];
-        wort_min_fifteen[3] = matrix_leds[5][0];
-        wort_min_fifteen[4] = matrix_leds[6][1];
-        wort_min_fifteen[5] = matrix_leds[7][0];
-        wort_min_fifteen[6] = matrix_leds[7][1];
+      wort_past[0] = matrix_leds[4][2];
+      wort_past[1] = matrix_leds[5][2];
+      wort_past[2] = matrix_leds[6][2];
+      wort_past[3] = (v==1) ? matrix_leds[6][3] : matrix_leds[7][2];
 
-        wort_min_twenty[0] = matrix_leds[5][0];
-        wort_min_twenty[1] = matrix_leds[6][0];
-        wort_min_twenty[2] = matrix_leds[7][0];
-        wort_min_twenty[3] = matrix_leds[0][1];
-        wort_min_twenty[4] = matrix_leds[1][1];
-        wort_min_twenty[5] = matrix_leds[2][1];
+      wort_to[0] = (v==2) ? matrix_leds[0][3] : matrix_leds[6][3];
+      wort_to[1] = (v==2) ? matrix_leds[1][3] : matrix_leds[7][2];
+      
+      wort_min_five[0] = matrix_leds[3][1];
+      wort_min_five[1] = matrix_leds[4][1];
+      wort_min_five[2] = matrix_leds[5][1];
+      wort_min_five[3] = matrix_leds[6][1];
 
-        wort_hour_one[0] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
-        wort_hour_one[1] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[6][5] : matrix_leds[5][5];
-        wort_hour_one[2] = (v==0) ? matrix_leds[7][3] : (v==1) ? matrix_leds[7][6] : matrix_leds[5][6];
+      wort_min_ten[0] = matrix_leds[5][0];
+      wort_min_ten[1] = matrix_leds[6][1];
+      wort_min_ten[2] = matrix_leds[7][1];
 
-        wort_hour_two[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
-        wort_hour_two[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
-        wort_hour_two[2] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
+      wort_min_fifteen[0] = matrix_leds[3][1];
+      wort_min_fifteen[1] = matrix_leds[4][1];
+      wort_min_fifteen[2] = matrix_leds[4][0];
+      wort_min_fifteen[3] = matrix_leds[5][0];
+      wort_min_fifteen[4] = matrix_leds[6][1];
+      wort_min_fifteen[5] = matrix_leds[7][0];
+      wort_min_fifteen[6] = matrix_leds[7][1];
 
-        wort_hour_three[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
-        wort_hour_three[1] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[4][5] : matrix_leds[4][4];
-        wort_hour_three[2] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[4][5];
-        wort_hour_three[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
-        wort_hour_three[4] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[6][5];
+      wort_min_twenty[0] = matrix_leds[5][0];
+      wort_min_twenty[1] = matrix_leds[6][0];
+      wort_min_twenty[2] = matrix_leds[7][0];
+      wort_min_twenty[3] = matrix_leds[0][1];
+      wort_min_twenty[4] = matrix_leds[1][1];
+      wort_min_twenty[5] = matrix_leds[2][1];
 
-        wort_hour_four[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[2][6] : matrix_leds[0][4];
-        wort_hour_four[1] = (v==0) ? matrix_leds[1][5] : (v==1) ? matrix_leds[3][6] : matrix_leds[0][5];
-        wort_hour_four[2] = (v==0) ? matrix_leds[2][5] : (v==1) ? matrix_leds[4][6] : matrix_leds[0][6];
-        wort_hour_four[3] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[0][7];
+      wort_min_half[0] = matrix_leds[0][2];
+      wort_min_half[1] = matrix_leds[1][2];
+      wort_min_half[2] = matrix_leds[2][2];
+      wort_min_half[3] = matrix_leds[3][2];
 
-        wort_hour_five[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[1][3] : matrix_leds[3][3];
-        wort_hour_five[1] = (v==0) ? matrix_leds[2][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
-        wort_hour_five[2] = (v==0) ? matrix_leds[3][6] : (v==1) ? matrix_leds[1][5] : matrix_leds[2][5];
-        wort_hour_five[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[1][6] : matrix_leds[3][6];
+      wort_hour_one[0] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
+      wort_hour_one[1] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[6][5] : matrix_leds[5][5];
+      wort_hour_one[2] = (v==0) ? matrix_leds[7][3] : (v==1) ? matrix_leds[7][6] : matrix_leds[5][6];
 
-        wort_hour_six[0] = (v==0) ? matrix_leds[0][5] : (v==1) ? matrix_leds[0][5] : matrix_leds[1][5];
-        wort_hour_six[1] = (v==0) ? matrix_leds[0][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[1][6];
-        wort_hour_six[2] = (v==0) ? matrix_leds[0][7] : (v==1) ? matrix_leds[2][3] : matrix_leds[2][6];
+      wort_hour_two[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
+      wort_hour_two[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
+      wort_hour_two[2] = (v==0) ? matrix_leds[5][3] : (v==1) ? matrix_leds[5][4] : matrix_leds[5][4];
 
-        wort_hour_seven[0] = (v==0) ? matrix_leds[4][5] : (v==1) ? matrix_leds[7][3] : matrix_leds[7][3];
-        wort_hour_seven[1] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
-        wort_hour_seven[2] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
-        wort_hour_seven[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
-        wort_hour_seven[4] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+      wort_hour_three[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
+      wort_hour_three[1] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[4][5] : matrix_leds[4][4];
+      wort_hour_three[2] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[4][5];
+      wort_hour_three[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
+      wort_hour_three[4] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[6][5];
 
-        wort_hour_eight[0] = (v==0) ? matrix_leds[0][4] : (v==1) ? matrix_leds[0][4] : matrix_leds[2][3];
-        wort_hour_eight[1] = (v==0) ? matrix_leds[1][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
-        wort_hour_eight[2] = (v==0) ? matrix_leds[2][4] : (v==1) ? matrix_leds[2][4] : matrix_leds[3][4];
-        wort_hour_eight[3] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[3][4] : matrix_leds[4][4];
-        wort_hour_eight[4] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
+      wort_hour_four[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[2][6] : matrix_leds[0][4];
+      wort_hour_four[1] = (v==0) ? matrix_leds[1][5] : (v==1) ? matrix_leds[3][6] : matrix_leds[0][5];
+      wort_hour_four[2] = (v==0) ? matrix_leds[2][5] : (v==1) ? matrix_leds[4][6] : matrix_leds[0][6];
+      wort_hour_four[3] = (v==0) ? matrix_leds[3][5] : (v==1) ? matrix_leds[5][6] : matrix_leds[0][7];
 
-        wort_hour_nine[0] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[0][3] : matrix_leds[1][4];
-        wort_hour_nine[1] = (v==0) ? matrix_leds[6][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
-        wort_hour_nine[2] = (v==0) ? matrix_leds[7][4] : (v==1) ? matrix_leds[2][5] : matrix_leds[3][5];
-        wort_hour_nine[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[3][5] : matrix_leds[3][6];
+      wort_hour_five[0] = (v==0) ? matrix_leds[1][6] : (v==1) ? matrix_leds[1][3] : matrix_leds[3][3];
+      wort_hour_five[1] = (v==0) ? matrix_leds[2][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+      wort_hour_five[2] = (v==0) ? matrix_leds[3][6] : (v==1) ? matrix_leds[1][5] : matrix_leds[2][5];
+      wort_hour_five[3] = (v==0) ? matrix_leds[4][6] : (v==1) ? matrix_leds[1][6] : matrix_leds[3][6];
 
-        wort_hour_ten[0] = (v==0) ? matrix_leds[5][6] : (v==1) ? matrix_leds[5][5] : matrix_leds[4][6];
-        wort_hour_ten[1] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
-        wort_hour_ten[2] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+      wort_hour_six[0] = (v==0) ? matrix_leds[0][5] : (v==1) ? matrix_leds[0][5] : matrix_leds[1][5];
+      wort_hour_six[1] = (v==0) ? matrix_leds[0][6] : (v==1) ? matrix_leds[1][4] : matrix_leds[1][6];
+      wort_hour_six[2] = (v==0) ? matrix_leds[0][7] : (v==1) ? matrix_leds[2][3] : matrix_leds[2][6];
 
-        wort_hour_eleven[0] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
-        wort_hour_eleven[1] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
-        wort_hour_eleven[2] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
-        wort_hour_eleven[3] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
-        wort_hour_eleven[4] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
-        wort_hour_eleven[5] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+      wort_hour_seven[0] = (v==0) ? matrix_leds[4][5] : (v==1) ? matrix_leds[7][3] : matrix_leds[7][3];
+      wort_hour_seven[1] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
+      wort_hour_seven[2] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+      wort_hour_seven[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+      wort_hour_seven[4] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
 
-        wort_hour_twelve[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
-        wort_hour_twelve[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
-        wort_hour_twelve[2] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
-        wort_hour_twelve[3] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
-        wort_hour_twelve[4] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
-        wort_hour_twelve[5] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+      wort_hour_eight[0] = (v==0) ? matrix_leds[0][4] : (v==1) ? matrix_leds[0][4] : matrix_leds[2][3];
+      wort_hour_eight[1] = (v==0) ? matrix_leds[1][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+      wort_hour_eight[2] = (v==0) ? matrix_leds[2][4] : (v==1) ? matrix_leds[2][4] : matrix_leds[3][4];
+      wort_hour_eight[3] = (v==0) ? matrix_leds[3][4] : (v==1) ? matrix_leds[3][4] : matrix_leds[4][4];
+      wort_hour_eight[4] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[4][4] : matrix_leds[4][3];
+
+      wort_hour_nine[0] = (v==0) ? matrix_leds[6][3] : (v==1) ? matrix_leds[0][3] : matrix_leds[1][4];
+      wort_hour_nine[1] = (v==0) ? matrix_leds[6][4] : (v==1) ? matrix_leds[1][4] : matrix_leds[2][4];
+      wort_hour_nine[2] = (v==0) ? matrix_leds[7][4] : (v==1) ? matrix_leds[2][5] : matrix_leds[3][5];
+      wort_hour_nine[3] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[3][5] : matrix_leds[3][6];
+
+      wort_hour_ten[0] = (v==0) ? matrix_leds[5][6] : (v==1) ? matrix_leds[5][5] : matrix_leds[4][6];
+      wort_hour_ten[1] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[6][6] : matrix_leds[5][6];
+      wort_hour_ten[2] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+
+      wort_hour_eleven[0] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
+      wort_hour_eleven[1] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
+      wort_hour_eleven[2] = (v==0) ? matrix_leds[5][5] : (v==1) ? matrix_leds[7][4] : matrix_leds[7][4];
+      wort_hour_eleven[3] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+      wort_hour_eleven[4] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
+      wort_hour_eleven[5] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
+
+      wort_hour_twelve[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
+      wort_hour_twelve[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
+      wort_hour_twelve[2] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
+      wort_hour_twelve[3] = (v==0) ? matrix_leds[5][4] : (v==1) ? matrix_leds[6][4] : matrix_leds[6][4];
+      wort_hour_twelve[4] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
+      wort_hour_twelve[5] = (v==0) ? matrix_leds[7][5] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
     }
 
     void init_letters(int16_t variante)
@@ -230,7 +238,7 @@ class Display {
         {
             for(int j=0; j<8; j++)
             {
-              led_letters[ matrix_leds[i][j] ] = (variante == 1) ? matrix_clockface_v1[i][j] : (variante == 2) ? matrix_clockface_v2[i][j] : matrix_clockface_v3[i][j];
+              led_letters[ matrix_leds[i][j] ] = (variante == 0) ? matrix_clockface_v1[i][j] : (variante == 1) ? matrix_clockface_v2[i][j] : matrix_clockface_v3[i][j];
             }
         }
     }
@@ -238,8 +246,6 @@ class Display {
     void init_matrix(int variante)
     {
       ESP_LOGI(TAG2, "init matrix %d", variante);
-      int x=8;
-      int y=8;
       if(variante==1) 
       /*
       * 0  1  2  3  4  5  6  7
@@ -248,11 +254,11 @@ class Display {
       * ...
       */
       {
-        for(int yi=0; yi<y; yi++)
+        for(int yi=0; yi<8; yi++)
         {
-        for(int xi=0; xi<x; xi++)
+        for(int xi=0; xi<8; xi++)
           {
-            matrix_leds[xi][yi]= xi + yi*x;
+            matrix_leds[xi][yi] = xi + yi*8;
           }
         }
       }
@@ -264,16 +270,16 @@ class Display {
       * ...
       */
       {
-        for(int yi=0; yi<y; yi++)
+        for(int yi=0; yi<8; yi++)
         {
-          for(int xi=0; xi<x; xi++)
+          for(int xi=0; xi<8; xi++)
           {
-            matrix_leds[xi][yi]= xi + yi*x;
+            matrix_leds[xi][yi] = xi + yi*8;
           }
           yi++;
-          for(int xi=0; xi<x; xi++)
+          for(int xi=0; xi<8; xi++)
           {
-            matrix_leds[7-xi][yi]= xi + yi*x;
+            matrix_leds[7-xi][yi] = xi + yi*8;
           }
         }
       }
@@ -285,26 +291,24 @@ class Display {
       {
         ESP_LOGI(TAG2, "Drehe Matrix. Ergebnis:");
         int16_t matrixTemp[8][8];
-        int x=8;
-        int y=8;
-        for(int yi=0; yi<y; yi++)
+        for(int yi=0; yi<8; yi++)
         {
-          for(int xi=0; xi<x; xi++)
+          for(int xi=0; xi<8; xi++)
           {
             if(orientation==1) //turn once clockwise 90degree
-            { matrixTemp[xi][yi] = matrix_leds[x-yi-1][xi]; }
+            { matrixTemp[xi][yi] = matrix_leds[7-yi][xi]; }
             
             else if(orientation==2) //turn twice 90degree
-            { matrixTemp[xi][yi] = matrix_leds[x-xi-1][y-yi-1]; }
+            { matrixTemp[xi][yi] = matrix_leds[7-xi][7-yi]; }
             
             else if(orientation==3) //turn once counter clockwise 90degree
-            { matrixTemp[xi][yi] = matrix_leds[yi][y-xi-1]; }
+            { matrixTemp[xi][yi] = matrix_leds[yi][7-xi]; }
           }
         }
-        for(int yi=0; yi<y; yi++)
+        for(int yi=0; yi<8; yi++)
         {
           ESP_LOGI(TAG2, "");
-          for(int xi=0; xi<x; xi++)
+          for(int xi=0; xi<8; xi++)
           { 
             matrix_leds[xi][yi] = matrixTemp[xi][yi];
             ESP_LOGI(TAG2, "%d", matrix_leds[xi][yi]);
@@ -581,7 +585,7 @@ class Display {
       }
       else if(nMalFuenf==6)
       {
-        reihe_leds_in_listen(wort_min_half, 4, listen);      
+        reihe_leds_in_listen(wort_min_half, 4, listen);
       }
     }
 
@@ -630,6 +634,8 @@ class Display {
     }
     
     void stelle_zeit(int letzte_stunde, int letzte_minute, int aktuelle_stunde, int aktuelle_minute) {
+        clear_lists();
+
         ESP_LOGI(TAG2, "stelle Uhrzeit %d, %d, %d, %d", letzte_stunde, letzte_minute, aktuelle_stunde, aktuelle_minute);
         bool abbau[3] = {true, false, false};
         bool aufbau_und_effekt[3] = {false, true, true};
