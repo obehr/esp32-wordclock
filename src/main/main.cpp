@@ -188,7 +188,7 @@ static void print_time(void *pvParameters)
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The current date/time in Berlin is: %s", strftime_buf);
-    vTaskDelay( pdMS_TO_TICKS(10000) );
+    vTaskDelay( pdMS_TO_TICKS(100000) );
   }
 }
 
@@ -234,7 +234,7 @@ static void loop_time(void *pvParameters)
       {
         break;
       }
-      ESP_LOGI(TAG, "The display time has not changed %d : %d", aktuelle_stunde, aktuelle_fuenfminute);
+      //ESP_LOGI(TAG, "The display time has not changed %d : %d", aktuelle_stunde, aktuelle_fuenfminute);
       vTaskDelay( pdMS_TO_TICKS(10000) );
     }
     

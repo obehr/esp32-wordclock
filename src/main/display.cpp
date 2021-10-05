@@ -123,6 +123,7 @@ class Display {
       wort_its[0] = matrix_leds[0][0];
       wort_its[1] = matrix_leds[1][0];
       wort_its[2] = matrix_leds[2][0];
+      ESP_LOGI(TAG2, "letter I in its is led %d", wort_its[0]);
 
       wort_oclock[0] = matrix_leds[2][7];
       wort_oclock[1] = matrix_leds[3][7];
@@ -155,7 +156,7 @@ class Display {
       wort_min_fifteen[4] = matrix_leds[6][1];
       wort_min_fifteen[5] = matrix_leds[7][0];
       wort_min_fifteen[6] = matrix_leds[7][1];
-
+      ESP_LOGI(TAG2, "letter E in fifteen is led %d", wort_min_fifteen[5]);
       wort_min_twenty[0] = matrix_leds[5][0];
       wort_min_twenty[1] = matrix_leds[6][0];
       wort_min_twenty[2] = matrix_leds[7][0];
@@ -307,12 +308,9 @@ class Display {
         }
         for(int yi=0; yi<8; yi++)
         {
-          ESP_LOGI(TAG2, "");
           for(int xi=0; xi<8; xi++)
           { 
             matrix_leds[xi][yi] = matrixTemp[xi][yi];
-            ESP_LOGI(TAG2, "%d", matrix_leds[xi][yi]);
-            ESP_LOGI(TAG2, " ");
           }
         }
       }
@@ -374,7 +372,7 @@ class Display {
         //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
         
         int normaleHelligkeit = 80;
-        int maximaleHelligkeit = normaleHelligkeit*1.5;
+        int maximaleHelligkeit = normaleHelligkeit*1.8;
         maximaleHelligkeit = (maximaleHelligkeit>255)?255:maximaleHelligkeit;
         int differenz = maximaleHelligkeit - normaleHelligkeit;
         int neueHelligkeit;
@@ -468,7 +466,7 @@ class Display {
           for(int k=0; k<liste_abbau.length; k++)
           {
             ledId = liste_abbau.get_item(k);
-            if(ledId>0)
+            if(ledId>=0)
             {
               neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
               if(neueHelligkeit>0)
@@ -482,7 +480,7 @@ class Display {
         }  
     }
 
-    void iteriereLedsInListe(int liste, int aktion, bool onebyone, int delay)
+    void iteriere_leds_in_liste(int liste, int aktion, bool onebyone, int delay)
     {
       /*
       Aktion 0: ausschalten
@@ -560,36 +558,34 @@ class Display {
     {
       //0=0, 1=5, 2=10, 3=15, 4=20, 5=25, 6=30, 7=35, 8=40, 9=45, 10=50, 11=55
 
-      //„twenty“
       //20, 25, 35, 40
       if(nMalFuenf==4 or nMalFuenf==5 or nMalFuenf==7 or nMalFuenf==8)
       {
         reihe_leds_in_listen(wort_min_twenty, 6, listen);
       }
-      //„five“
       //5, 25, 35, 55
       if(nMalFuenf==1 or nMalFuenf==5 or nMalFuenf==7 or nMalFuenf==11)
       {
         reihe_leds_in_listen(wort_min_five, 4, listen);      
       }
-
-      //„ten“, „fifteen“, „half“
-      //10, 50; 15, 45; 30
-      if(nMalFuenf==2 or nMalFuenf==10)
+      //10, 50
+      else if(nMalFuenf==2 or nMalFuenf==10)
       {
         reihe_leds_in_listen(wort_min_ten, 3, listen);            
       }
+      //15, 45
       else if(nMalFuenf==3 or nMalFuenf==9)
       {
         reihe_leds_in_listen(wort_min_fifteen, 7, listen);            
       }
+      //30
       else if(nMalFuenf==6)
       {
         reihe_leds_in_listen(wort_min_half, 4, listen);
       }
     }
 
-    void reihe_past_oder_to_in_listen(int nMalFuenf, bool listen[])
+  void reihe_past_oder_to_in_listen(int nMalFuenf, bool listen[])
   {
     //past; to
     //1-5; 6-11
@@ -599,6 +595,33 @@ class Display {
     else if(nMalFuenf>=7 and nMalFuenf<12)
     { reihe_leds_in_listen(wort_to, 2, listen); }
   }
+
+  void bearbeiteListe()
+    {
+      //ESP_LOGI(TAG2, "bearbeite Liste %d", mode);
+      if(mode==1) //schalten
+      { 
+        ESP_LOGI(TAG2, "schalte LEDs um");
+        iteriere_leds_in_liste(0, 0, true, 100);
+        iteriere_leds_in_liste(1, 1, true, 100);
+        liste_aufbau.clear();
+        liste_abbau.clear();
+        mode = -1;
+      }
+      if(mode==2) //fade over
+      {
+        ESP_LOGI(TAG2, "fade LEDs");
+        fadeLeds();
+        liste_aufbau.clear();
+        liste_abbau.clear();
+        mode = -1;
+      }
+      else if(mode==3) //animate leds in list 3
+      {
+        flashLeds();
+      }
+      //ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", mode);
+    }
 
   public:
     int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
@@ -672,30 +695,7 @@ class Display {
         }
     }
 
-    void bearbeiteListe()
-    {
-      ESP_LOGI(TAG2, "bearbeite Liste %d", mode);
-      if(mode==1) //schalten
-      { 
-        iteriereLedsInListe(0,0,true,100);
-        iteriereLedsInListe(1,1,true,100);
-        liste_aufbau.clear();
-        liste_abbau.clear();
-        mode = -1;
-      }
-      if(mode==2) //fade over
-      {
-        fadeLeds();
-        liste_aufbau.clear();
-        liste_abbau.clear();
-        mode = -1;
-      }
-      else if(mode==3) //animate leds in list 3
-      {
-        flashLeds();
-      }
-      ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", mode);
-    }
+    
 
     void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours)
     {
