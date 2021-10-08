@@ -54,7 +54,6 @@ int16_t currentHour;
 int16_t lastMinute=-1;
 //ESP_LOGI(TAG, "create display");
 Display my_display{};
-bool config_exists = false;
 my_config* current_config;
 //ESP_LOGI(TAG, "created display");
 bool display = false;
@@ -83,22 +82,67 @@ time_t now;
 
 void cb_received_config(void *pvParameter){
   ESP_LOGI(TAG, "callback received_config");
-
-	current_config = (my_config*)pvParameter;
+  current_config = (my_config*)pvParameter;
   ESP_LOGI(TAG, "casted to my_config");
+	
+
+  if(!current_config->config_changed)
+  {
+    ESP_LOGI(TAG, "Config did not change");
+    return;
+  }
+  //reset boolean to false
+  current_config->config_changed = false;
+  
   int16_t current_hour = current_config->hour;
   ESP_LOGI(TAG, "got hour from config %d", current_hour);
-  config_exists = true;
 
   if(current_config->time_changed)
   {
     ESP_LOGI(TAG, "got new time config: %d, %d, %d", current_config->hour ,current_config->minute, current_config->use_ntp);
+    
+    if(current_config->use_ntp)
+    {
+      ESP_LOGI(TAG, "Activate NTP");
+      sntp_setservername(0, "fritz.box");
+      //sntp_setoperatingmode(SNTP_OPMODE_POLL);
+      sntp_init();
+    }
+    else
+    {
+      ESP_LOGI(TAG, "Deactivate NTP");
+      sntp_setservername(0, "localhost");
+      //sntp_setoperatingmode(SNTP_OPMODE_LISTENONLY);
+
+      char strftime_buf[64];
+      struct tm timeinfo;
+      time(&now);
+      localtime_r(&now, &timeinfo);
+      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+      ESP_LOGI(TAG, "The time before setting it: %s", strftime_buf);
+      
+
+      struct timeval tv;
+      //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
+      tv.tv_sec = 1633644000+3600*current_config->hour+60*current_config->minute;
+      settimeofday(&tv, NULL);
+
+      time(&now);
+      localtime_r(&now, &timeinfo);
+      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+      ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
+    }
+
+
+
+    //reset boolean to false
     current_config->time_changed = false;
   }
   if(current_config->color_changed)
   {
     ESP_LOGI(TAG, "got new colors: %d, %d, %d, %d", current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
-    my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
+    my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours, current_config->brightness, current_config->saturation);
+    //reset boolean to false
     current_config->color_changed = false;
   }
   
@@ -307,11 +351,9 @@ void app_main() {
 
   // this is a good test because it uses the GPIO ports, these are 4 wire not 3 wire
   //FastLED.addLeds<APA102, 13, 15>(leds, NUM_LEDS);
-  current_config = (my_config*)get_config();
-  ESP_LOGI(TAG, "casted to my_config");
+  current_config = get_default_config();
   int16_t current_hour = current_config->hour;
   ESP_LOGI(TAG, "got hour from config %d", current_hour);
-  config_exists = true;
   
 
   setenv("TZ", "UTC-2", 1);
@@ -334,7 +376,8 @@ void app_main() {
   //xTaskCreatePinnedToCore(&blinkLeds_simple, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
-  my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
+  my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours, current_config->brightness, current_config->saturation);
+
   
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);

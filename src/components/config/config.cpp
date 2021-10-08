@@ -24,6 +24,7 @@ typedef struct {
   uint16_t brightness;
   bool time_changed;
   bool color_changed;
+  bool config_changed;
 } my_config;
 
 static bool config_available = false;
@@ -31,6 +32,31 @@ static bool config_available = false;
 static my_config valid_config;
 
 static my_config default_config;
+
+static void init_default_config()
+{
+  ESP_LOGI(TAG3, "Initialize default config");
+  default_config.hour = 0;
+  default_config.minute = 0;
+  default_config.use_ntp = false;
+  default_config.color_its_oclock = 50;
+  default_config.color_minutes = 100;
+  default_config.color_past_to = 150;
+  default_config.color_hours = 200;
+  default_config.saturation = 255;
+  default_config.brightness = 100;
+  default_config.time_changed = false;
+  default_config.color_changed = false;
+  default_config.config_changed = false;
+}
+
+static my_config* get_default_config()
+{
+  init_default_config();
+  
+  ESP_LOGI(TAG3, "Passing default config");
+  return &default_config;
+}
 
 static void* get_config()
 {
@@ -41,20 +67,8 @@ static void* get_config()
   }
   else
   {
-    default_config.hour = 0;
-    default_config.minute = 0;
-    default_config.use_ntp = false;
-    default_config.color_its_oclock = 50;
-    default_config.color_minutes = 100;
-    default_config.color_past_to = 150;
-    default_config.color_hours = 200;
-    default_config.saturation = 255;
-    default_config.brightness = 100;
-    default_config.time_changed = false;
-    default_config.color_changed = false;
-    
-    
-    ESP_LOGI(TAG3, "Passing default config");
+    default_config.config_changed = false;
+    ESP_LOGI(TAG3, "Config has not changed");
     return (void*)&default_config;
   }
 }
@@ -94,6 +108,7 @@ static void save_config(char *config_raw, size_t length)
 
   if(!config_available)
   {
+    init_default_config();
     valid_config.hour = default_config.hour;
     valid_config.minute = default_config.minute;
     valid_config.use_ntp = default_config.use_ntp;
@@ -129,10 +144,15 @@ static void save_config(char *config_raw, size_t length)
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "ntpUse"));
-  if((value_casted == 0 || value_casted == 1) && value_casted != valid_config.use_ntp)
+  if((value_casted == 1) != valid_config.use_ntp)
   {
-    valid_config.use_ntp = value_casted;
+    ESP_LOGI(TAG3, "casted ntp value %d", value_casted);
+    valid_config.use_ntp = (value_casted==1);
     time_changed = true;
+  }
+  else
+  {
+    ESP_LOGI(TAG3, "unchanged ntp value %s", cJSON_GetObjectItemCaseSensitive(json, "ntpUse")->valuestring);
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c1"));
@@ -180,8 +200,8 @@ static void save_config(char *config_raw, size_t length)
 
   valid_config.time_changed = time_changed;
   valid_config.color_changed = color_changed;
-  config_available = color_changed || time_changed;
-
+  valid_config.config_changed = color_changed || time_changed;
+  config_available = true;
   /*
   uint16_t minute_casted = atoi(minute_json->valuestring);
   bool use_ntp_casted = (atoi(minute_json->valuestring) == 1);

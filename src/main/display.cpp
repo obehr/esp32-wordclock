@@ -11,7 +11,6 @@
 //#define NUM_LEDS 512
 #define NUM_LEDS 64
 #define DATA_PIN 26
-#define BRIGHTNESS  80
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
 #define VARIANT_LED_NUMBERING 1
@@ -371,10 +370,9 @@ class Display {
         //fade out und fade in passieren gleichzeitig
         //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
         
-        int normaleHelligkeit = 80;
-        int maximaleHelligkeit = normaleHelligkeit*1.8;
+        int maximaleHelligkeit = led_brightness*1.8;
         maximaleHelligkeit = (maximaleHelligkeit>255)?255:maximaleHelligkeit;
-        int differenz = maximaleHelligkeit - normaleHelligkeit;
+        int differenz = maximaleHelligkeit - led_brightness;
         int neueHelligkeit;
         //int led;
         int16_t ledId;
@@ -396,7 +394,7 @@ class Display {
             breakPoint = startPoint + stepsFadeUp;
             endPoint = breakPoint + stepsFadeDown;
             if(i>startPoint and i<=breakPoint)
-            { neueHelligkeit=normaleHelligkeit+(i-startPoint)*(differenz/stepsFadeUp); }
+            { neueHelligkeit=led_brightness+(i-startPoint)*(differenz/stepsFadeUp); }
             else if(i>breakPoint and i<=endPoint)
             { neueHelligkeit=maximaleHelligkeit-(i-breakPoint)*(differenz/stepsFadeDown); }
             else
@@ -408,7 +406,7 @@ class Display {
             {
               ledId = liste_effekt.get_item(j);
               if(ledId!=-1)
-              { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
+              { matrix[ledId].setHSV( led_colors[ledId], led_saturation, neueHelligkeit); }
             }
           }
           vTaskDelay( pdMS_TO_TICKS(50) );
@@ -431,7 +429,6 @@ class Display {
         int schrittweiteAbbau = 5;
         //int aktuelleHelligkeit;
         int neueHelligkeit;
-        int volleHelligkeit = 80;
         int16_t ledId;
         int offsetAufbau=50;
         int offsetAbbau=10;
@@ -446,14 +443,14 @@ class Display {
           for(int j=0; j<liste_aufbau.length; j++)
           {     
             ledId = liste_aufbau.get_item(j);
-            neueHelligkeit = berechneHelligkeit(i,j,schrittweiteAufbau,offsetAufbau,volleHelligkeit,true);
-            if(neueHelligkeit<volleHelligkeit)
+            neueHelligkeit = berechneHelligkeit(i,j,schrittweiteAufbau,offsetAufbau,led_brightness,true);
+            if(neueHelligkeit<led_brightness)
             { ausstehenderAufbau = true; }
             ledIndexAbbau = liste_abbau.get_index(ledId);
             if(ledIndexAbbau==-1)
             { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
             else {
-              int helligkeitAbbau = berechneHelligkeit(i,ledIndexAbbau,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
+              int helligkeitAbbau = berechneHelligkeit(i,ledIndexAbbau,schrittweiteAbbau,offsetAbbau,led_brightness,false);
               if(neueHelligkeit>helligkeitAbbau)
               {
                 liste_abbau.clear_item(ledIndexAbbau);
@@ -468,7 +465,7 @@ class Display {
             ledId = liste_abbau.get_item(k);
             if(ledId>=0)
             {
-              neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,volleHelligkeit,false);
+              neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,led_brightness,false);
               if(neueHelligkeit>0)
               { ausstehenderAbbau = true; }
               matrix[ledId].setHSV(led_colors[ledId], 200, neueHelligkeit);
@@ -625,6 +622,9 @@ class Display {
 
   public:
     int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
+    int16_t led_brightness = 0;
+    int16_t led_saturation = 0;
+    
     Display()
     {
       ESP_LOGI(TAG2, "construct display");
@@ -695,13 +695,13 @@ class Display {
         }
     }
 
-    
-
-    void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours)
+    void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours, uint16_t brightness, uint16_t saturation)
     {
-      ESP_LOGI(TAG2, "set colors to %d, %d, %d, %d", color_its_oclock, color_minutes, color_past_to, color_hours);
+      ESP_LOGI(TAG2, "set colors to c1 %d, c2 %d, c3 %d, c4 %d, bri %d, sat %d", color_its_oclock, color_minutes, color_past_to, color_hours, brightness, saturation);
       bool aufbau[3] = {false, true, false};
-        
+      
+      led_brightness = brightness;
+      led_saturation = saturation;
       reihe_leds_in_listen(wort_its, 3, aufbau);
       reihe_leds_in_listen(wort_oclock, 6, aufbau);
       setze_farbe_in_liste(color_its_oclock);
