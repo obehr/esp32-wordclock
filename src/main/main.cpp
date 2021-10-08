@@ -227,7 +227,7 @@ static void loop_time(void *pvParameters)
       time(&now);
       localtime_r(&now, &timeinfo);
 
-      aktuelle_stunde = (timeinfo.tm_min < 28) ? timeinfo.tm_hour % 12 : (timeinfo.tm_hour + 1) % 12;
+      aktuelle_stunde = (timeinfo.tm_min < 33) ? timeinfo.tm_hour % 12 : (timeinfo.tm_hour + 1) % 12;
       aktuelle_fuenfminute = (timeinfo.tm_min + 2) % 60 / 5;
 
       if(aktuelle_fuenfminute != letzte_fuenfminute || aktuelle_stunde != letzte_stunde)
