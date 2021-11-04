@@ -368,7 +368,7 @@ void app_main() {
   ESP_LOGI(TAG, "got hour from config %d", current_hour);
   
 
-  setenv("TZ", "UTC-2", 1);
+  setenv("TZ", "UTC-1", 1);
   tzset();
 
   

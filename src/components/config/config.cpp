@@ -159,7 +159,7 @@ static void save_config(char *config_raw, size_t length)
   if(strcmp(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring, "") != 0)
   {
     int16_t value_casted = atoi(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
-    if(value_casted>-10 && value_casted<10 && value_casted != valid_config.time_offset)
+    if(value_casted>-5 && value_casted<5 && value_casted != valid_config.time_offset)
     {
       ESP_LOGI(TAG3, "casted timeOffset value %d", value_casted);
       valid_config.time_offset = value_casted;
