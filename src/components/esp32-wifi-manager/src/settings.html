@@ -234,37 +234,9 @@
 
 			</div>
 
-			<p>
-
-			<input type="radio" name="wifiConnect" value="1" onchange="initcollapsibles();">Wifi Client Mode
-
-			<input type="radio" name="wifiConnect" value="0" checked onchange="initcollapsibles();">Wifi Access Point Mode
-
-			</p>
-
 		</div>
 
 		
-
-		<div id=wifisettings>
-
-			<div class="field-group">
-
-			  <label>SSID</label>
-
-			  <input name="ssid" type="text" size="32">
-
-			</div>
-
-			<div class="field-group">
-
-			  <label>Password</label>
-
-			  <input name="password" type="password" size="64">
-
-			</div>
-
-		</div>
 
 		<div id=ntpsettings>
 
@@ -274,6 +246,14 @@
 
 			  <input name="ntpServer" type="text" size="20">
 
+			</div>
+
+			<div class="field-group">
+
+				<label>Time Offset</label>
+
+				<input name="timeOffset" type="text" size="2">
+  
 			</div>
 
 		</div>
@@ -472,20 +452,6 @@
 
 		  document.getElementById("ntpsettings").style.display = "block"; 
 
-		  document.getElementById("wifisettings").style.display = "block";
-
-		}
-
-		else if(document.settings.wifiConnect.value == 1)
-
-		{ 
-
-		  document.getElementById("ntpsettings").style.display = "none"; 
-
-		  document.getElementById("wifisettings").style.display = "block";
-
-		  document.getElementById("manualtime").style.display = "block";
-
 		}
 
 		else
@@ -493,8 +459,6 @@
 		{
 
 		  document.getElementById("ntpsettings").style.display = "none"; 
-
-		  document.getElementById("wifisettings").style.display = "none";
 
 		  document.getElementById("manualtime").style.display = "block";
 

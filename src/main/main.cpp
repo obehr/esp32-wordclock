@@ -99,13 +99,14 @@ void cb_received_config(void *pvParameter){
 
   if(current_config->time_changed)
   {
-    ESP_LOGI(TAG, "got new time config: %d, %d, %d", current_config->hour ,current_config->minute, current_config->use_ntp);
+    ESP_LOGI(TAG, "got new time config: %d, %d, %d, %d", current_config->hour ,current_config->minute, current_config->use_ntp, current_config->time_offset);
     
     if(current_config->use_ntp)
     {
       ESP_LOGI(TAG, "Activate NTP");
       sntp_setservername(0, "fritz.box");
       //sntp_setoperatingmode(SNTP_OPMODE_POLL);
+      setenv("TZ", "UTC%d", current_config->time_offset, 1);
       sntp_init();
     }
     else

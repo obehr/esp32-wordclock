@@ -16,6 +16,7 @@ typedef struct {
   uint16_t hour;
   uint16_t minute;
   bool use_ntp;
+  int16_t time_offset;
   uint16_t color_its_oclock;
   uint16_t color_minutes;
   uint16_t color_past_to;
@@ -39,6 +40,7 @@ static void init_default_config()
   default_config.hour = 0;
   default_config.minute = 0;
   default_config.use_ntp = false;
+  default_config.time_offset = -1;
   default_config.color_its_oclock = 50;
   default_config.color_minutes = 100;
   default_config.color_past_to = 150;
@@ -93,10 +95,8 @@ static void save_config(char *config_raw, size_t length)
     "ntpUse":"0",
     "hour":"22",
     "minute":"22",
-    "wifiConnect":"0",
-    "ssid":"",
-    "password":"",
     "ntpServer":"",
+    "timeOffset":"",
     "c1":"0",
     "c2":"32",
     "c3":"64",
@@ -112,6 +112,7 @@ static void save_config(char *config_raw, size_t length)
     valid_config.hour = default_config.hour;
     valid_config.minute = default_config.minute;
     valid_config.use_ntp = default_config.use_ntp;
+    valid_config.time_offset = default_config.time_offset;
     valid_config.color_its_oclock = default_config.color_its_oclock;
     valid_config.color_minutes = default_config.color_minutes;
     valid_config.color_past_to = default_config.color_past_to;
@@ -153,6 +154,25 @@ static void save_config(char *config_raw, size_t length)
   else
   {
     ESP_LOGI(TAG3, "unchanged ntp value %s", cJSON_GetObjectItemCaseSensitive(json, "ntpUse")->valuestring);
+  }
+
+  if(strcmp(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring, "") != 0)
+  {
+    int16_t value_casted = atoi(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
+    if(value_casted>-10 && value_casted<10 && value_casted != valid_config.time_offset)
+    {
+      ESP_LOGI(TAG3, "casted timeOffset value %d", value_casted);
+      valid_config.time_offset = value_casted;
+      time_changed = true;
+    }
+    else
+    {
+      ESP_LOGI(TAG3, "unchanged time_offset value %s", cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
+    }
+  }
+  else
+  {
+    ESP_LOGI(TAG3, "unchanged time_offset value %s", cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c1"));
