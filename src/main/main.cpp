@@ -107,15 +107,15 @@ void cb_received_config(void *pvParameter){
       sntp_setservername(0, "fritz.box");
       //sntp_setoperatingmode(SNTP_OPMODE_POLL);
       switch(current_config->time_offset) {
-        case -4: setenv("TZ", "UTC-4", 1); break;
-        case -3: setenv("TZ", "UTC-3", 1); break;
-        case -2: setenv("TZ", "UTC-2", 1); break;
-        case -1: setenv("TZ", "UTC-1", 1); break;
-        case 0: setenv("TZ", "UTC0", 1); break;
-        case 1: setenv("TZ", "UTC1", 1); break;
-        case 2: setenv("TZ", "UTC2", 1); break;
-        case 3: setenv("TZ", "UTC3", 1); break;
-        case 4: setenv("TZ", "UTC4", 1); break;
+        case -4: setenv("TZ", "UTC-4", 1); tzset(); break;
+        case -3: setenv("TZ", "UTC-3", 1); tzset(); break;
+        case -2: setenv("TZ", "UTC-2", 1); tzset(); break;
+        case -1: setenv("TZ", "UTC-1", 1); tzset(); break;
+        case 0: setenv("TZ", "UTC0", 1); tzset(); break;
+        case 1: setenv("TZ", "UTC1", 1); tzset(); break;
+        case 2: setenv("TZ", "UTC2", 1); tzset(); break;
+        case 3: setenv("TZ", "UTC3", 1); tzset(); break;
+        case 4: setenv("TZ", "UTC4", 1); tzset(); break;
         default: ESP_LOGI(TAG, "unhandled offset"); break;
       }
       sntp_init();
