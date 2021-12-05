@@ -7,11 +7,14 @@
 #include <string.h>
 #include "FastLED.h"
 #include "list.cpp"
+#include "FastLED_RGBW.h"
 
 //#define NUM_LEDS 512
-#define NUM_LEDS 64
+#define NUM_LEDS 64 //unused
 #define DATA_PIN 26
 #define LED_TYPE    WS2812B
+#define STRIP_NUM_LEDS 9 //unused
+#define STRIP_DATA_PIN 32
 #define COLOR_ORDER GRB
 #define VARIANT_LED_NUMBERING 1
 #define VARIANT_CLOCKFACE 2
@@ -48,6 +51,8 @@ class Display {
     char led_letters[64];
     uint16_t led_colors[64] = {0};
     
+    bool display_on;
+    bool strip_on;
 
     const char matrix_clockface_v1[8][8] = 
     {
@@ -84,6 +89,15 @@ class Display {
       { 'u', 'i', 'x', 'e', 't', 'e', 'n', 'e' },
       { 'r', 'n', 'o', 'c', 'l', 'o', 'c', 'k' }
     };
+
+    const int16_t strip_normal_brightness[33] = 
+    { 42, 43, 44, 45, 47, 49, 51, 54, 57, 60, 65, 70, 75, 80, 90, 100, 110, 100, 90, 80, 75, 70, 65, 60, 57, 54, 51, 49, 47, 45, 44, 43, 42 };
+    
+    const int16_t strip_add_brightness[33] = 
+    { 31, 32, 33, 34, 35, 37, 40, 42, 45, 50, 55, 60, 65, 70, 75, 80, 90, 80, 75, 70, 65, 60, 55, 50, 45, 42, 40, 37, 35, 34, 33, 32, 31};
+
+    CRGBW leds[33];
+    CRGB *ledsRGB = (CRGB *) &leds[0];
 
     CRGBArray<64> matrix;
 
@@ -223,7 +237,7 @@ class Display {
       wort_hour_eleven[3] = (v==0) ? matrix_leds[6][5] : (v==1) ? matrix_leds[7][5] : matrix_leds[7][5];
       wort_hour_eleven[4] = (v==0) ? matrix_leds[6][6] : (v==1) ? matrix_leds[7][6] : matrix_leds[7][6];
       wort_hour_eleven[5] = (v==0) ? matrix_leds[7][6] : (v==1) ? matrix_leds[7][7] : matrix_leds[6][6];
-
+      ESP_LOGI(TAG2, "letter N in eleven is led %d", wort_hour_eleven[5]);
       wort_hour_twelve[0] = (v==0) ? matrix_leds[3][3] : (v==1) ? matrix_leds[3][3] : matrix_leds[4][3];
       wort_hour_twelve[1] = (v==0) ? matrix_leds[4][3] : (v==1) ? matrix_leds[4][3] : matrix_leds[5][3];
       wort_hour_twelve[2] = (v==0) ? matrix_leds[4][4] : (v==1) ? matrix_leds[5][3] : matrix_leds[6][3];
@@ -334,6 +348,28 @@ class Display {
     ########################
     */
 
+    void set_strip(bool status)
+    {
+      strip_on = status;
+      for(int i = 0; i < 33; i++){
+        leds[i] = CRGBW(0, 0, 0, (status)?strip_normal_brightness[i]:0);
+        FastLED.show();
+        delay(50);
+      }
+    }
+
+    void set_display(bool status)
+    {
+      display_on = status;
+      if(!status)
+      { 
+        for(int i = 0; i < 64; i++){
+          matrix[i].setHSV(0, 0, 0);
+          FastLED.show();
+          delay(50);
+      }
+    }
+
     void reihe_leds_in_listen(int16_t wort[], int laenge, bool listen[]) {
         for(int i=0; i<laenge; i++) {
             int16_t led = wort[i];
@@ -362,6 +398,52 @@ class Display {
       return (neueHelligkeit<0)?0:(neueHelligkeit>volleHelligkeit)?volleHelligkeit:neueHelligkeit;
     }
 
+    void flashStrip()
+    {
+        //effektdauert gibt die Anzahl der Schritte an
+        //delay zwischen den Schritten fix
+        //fade out und fade in passieren gleichzeitig
+        //wenn eine einzuschaltende led bereits eingeschaltet ist, so wird solange heruntergedimmt wie die Helligkeit noch groesser dem aktuellen Zielwert ist
+        int neueHelligkeit;
+        //int led;
+        int16_t ledId;
+        int stepsFadeUp=5;
+        int stepsFadeDown=25;
+        int stepsDelay=3;
+        //int runde;
+        int startPoint;
+        int breakPoint;
+        int endPoint;
+        int anzahlLeds = 33;
+        int anzahlRunden = (anzahlLeds-1) * stepsDelay + stepsFadeUp + stepsFadeDown + 1;
+
+
+
+        for(int i=0; i<anzahlRunden; i++)
+        {
+          for(int j=0; j<anzahlLeds; j++)
+          {
+            startPoint = j*stepsDelay;
+            breakPoint = startPoint + stepsFadeUp;
+            endPoint = breakPoint + stepsFadeDown;
+            if(i>startPoint and i<=breakPoint)
+            { neueHelligkeit = strip_normal_brightness[j] + (i-startPoint)*(strip_add_brightness[j]/stepsFadeUp); }
+            else if(i>breakPoint and i<=endPoint)
+            { neueHelligkeit = strip_normal_brightness[j] + strip_add_brightness[j] - (i-breakPoint)*(strip_add_brightness[j]/stepsFadeDown); }
+            else
+            { 
+              neueHelligkeit=-1; 
+            }
+
+            if(neueHelligkeit!=-1)
+            { 
+              leds[j] = CRGBW(0, 0, 0, neueHelligkeit);
+            }
+          }
+          vTaskDelay( pdMS_TO_TICKS(50) );
+          FastLED.show();
+        }      
+    }
 
     void flashLeds()
     {
@@ -615,7 +697,26 @@ class Display {
       }
       else if(mode==3) //animate leds in list 3
       {
-        flashLeds();
+        if(display_on)
+        { flashLeds(); }
+        if(strip_on)
+        { flashStrip(); }
+      }
+      else if(mode==4) //turn strip off
+      {
+        set_strip(false);
+      }
+      else if(mode==5) //turn strip on
+      {
+        set_strip(true);
+      }
+      else if(mode==6) //turn display off
+      {
+        set_display(false);
+      }
+      else if(mode==7) //turn display on
+      {
+        set_display(true);
       }
       //ESP_LOGI(TAG2, "Ende: bearbeite Liste %d", mode);
     }
@@ -624,7 +725,7 @@ class Display {
     int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
     int16_t led_brightness = 0;
     int16_t led_saturation = 0;
-    
+    int16_t strip_brightness = 100;
     Display()
     {
       ESP_LOGI(TAG2, "construct display");
@@ -633,10 +734,15 @@ class Display {
       
       ESP_LOGI(TAG2, "created matrix %d", matrix[3][2]);
       init_words(VARIANT_CLOCKFACE);
+      ESP_LOGI(TAG2, "init letters");
       init_letters(VARIANT_CLOCKFACE);
-      
+      FastLED.addLeds<LED_TYPE, STRIP_DATA_PIN, RGB>(ledsRGB, getRGBWsize(33));
+      ESP_LOGI(TAG2, "adding leds");
       FastLED.addLeds<LED_TYPE, DATA_PIN>(matrix, 64);
       FastLED.setMaxPowerInVoltsAndMilliamps(12,2000);
+
+      ESP_LOGI(TAG2, "show");
+      //FastLED.show();
     }
 
     void loop_display()

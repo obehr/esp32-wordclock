@@ -160,6 +160,23 @@ void cb_received_config(void *pvParameter){
   
 }
 
+void cb_display_off(void *pvParameter){
+  ESP_LOGI(TAG, "callback display off");
+  my_display.mode = 6;
+
+void cb_display_on(void *pvParameter){
+  ESP_LOGI(TAG, "callback display on");
+  my_display.mode = 7;
+
+void cb_strip_off(void *pvParameter){
+  ESP_LOGI(TAG, "callback strip off");
+  my_display.mode = 4;
+
+void cb_strip_on(void *pvParameter){
+  ESP_LOGI(TAG, "callback strip on");
+  my_display.mode = 5;
+
+
 
 void time_sync_notification_cb(struct timeval *tv)
 {
@@ -378,6 +395,10 @@ void app_main() {
 	/* register a callback as an example to how you can integrate your code with the wifi manager */
 	wifi_manager_set_callback(WM_EVENT_STA_GOT_IP, &cb_connection_ok);
 	wifi_manager_set_callback(WM_RECEIVED_CONFIG, &cb_received_config);
+  wifi_manager_set_callback(WM_DISPLAY_OFF, &cb_display_off);
+  wifi_manager_set_callback(WM_DISPLAY_ON, &cb_display_on);
+  wifi_manager_set_callback(WM_STRIP_OFF, &cb_strip_off);
+  wifi_manager_set_callback(WM_STRIP_ON, &cb_strip_on);
 
 	/* your code should go here. Here we simply create a task on core 2 that monitors free heap memory */
 	//xTaskCreatePinnedToCore(&monitoring_task, "monitoring_task", 2048, NULL, 1, NULL, 1);
@@ -394,6 +415,7 @@ void app_main() {
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);
   
+  my_display.mode = 5;
   //xTaskCreatePinnedToCore(&loop_display, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&print_time, "print time", 4000, NULL, 5, NULL, 0);
 

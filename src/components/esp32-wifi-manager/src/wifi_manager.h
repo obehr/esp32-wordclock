@@ -225,7 +225,11 @@ typedef enum message_code_t {
 	WM_EVENT_STA_GOT_IP = 12,
 	WM_ORDER_STOP_AP = 13,
 	WM_RECEIVED_CONFIG = 14, //ADDED SETTINGS
-	WM_MESSAGE_CODE_COUNT = 15  /* important for the callback array */
+	WM_DISPLAY_OFF = 15, //ADDED SETTINGS
+	WM_DISPLAY_ON = 16, //ADDED SETTINGS
+	WM_STRIP_OFF = 17, //ADDED SETTINGS
+	WM_STRIP_ON = 18, //ADDED SETTINGS
+	WM_MESSAGE_CODE_COUNT = 19  /* important for the callback array */
 }message_code_t;
 
 /**

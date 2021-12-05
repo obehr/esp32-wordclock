@@ -1042,8 +1042,75 @@
 
       };
 
-      
+      var validationSettings = {
+
+        rules: {
+
+          hour: {
+
+            required: false
+
+          },
+
+          minute: {
+
+            required: false
+
+          },
+
+          second: {
+
+            required: false
+
+          },
+
+          ntpUse: {
+
+            required: false
+
+          },
+
+          ntpServer: {
+
+            required: false
+
+          },
+
+          c1: {
+
+            required: false
+
+		  },
+
+          c2: {
+
+            required: false
+
+		  },
+
+          c3: {
+
+            required: false
+
+		  },
+
+          brightness: {
+
+            required: false
+
+          }
+
+        }
+
+      };
+
+      $('form').validate(validationSettings);
+
       $('form').on('submit', function(e) {
+
+        if($(this).valid()) {
+
+          e.preventDefault();
 
           var formData = $(this).serializeObject();
 
@@ -1068,6 +1135,8 @@
           });
 
           return false;
+
+        }
 
       });
 

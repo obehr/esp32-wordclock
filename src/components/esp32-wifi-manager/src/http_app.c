@@ -66,6 +66,10 @@ static char* http_connect_url = NULL;
 static char* http_ap_url = NULL;
 static char* http_status_url = NULL;
 //ADDED SETTINGS JSON AND HTML URI
+static char* http_set_display_off_url = NULL;
+static char* http_set_display_on_url = NULL;
+static char* http_set_strip_off_url = NULL;
+static char* http_set_strip_on_url = NULL;
 static char* http_settings_url = NULL;
 static char* http_settings_page_url = NULL;
 static char* http_min_url = NULL;
@@ -139,10 +143,7 @@ static esp_err_t http_server_delete_handler(httpd_req_t *req){
 		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
 		httpd_resp_send(req, NULL, 0);
 	}
-	else if(strcmp(req->uri, http_settings_url) == 0){
-		//ADDED SETTINGS
-		//wifi_manager_disconnect_async();
-
+	else if(strcmp(req->uri, http_settings_url) == 0 || strcmp(req->uri, http_set_display_off_url || strcmp(req->uri, http_set_display_on_url || strcmp(req->uri, http_set_strip_off_url || strcmp(req->uri, http_set_strip_on_url) == 0){
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
 		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
@@ -246,6 +247,50 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 		save_config(content, recv_size);
 
 		wifi_manager_send_message(WM_RECEIVED_CONFIG, get_config() );
+		
+		httpd_resp_set_status(req, http_200_hdr);
+		httpd_resp_set_type(req, http_content_type_json);
+		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
+		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
+		httpd_resp_send(req, NULL, 0);
+	}
+	else if(strcmp(req->uri, http_set_display_off_url) == 0){
+		ESP_LOGI(TAG, "Turn off display");
+
+		wifi_manager_send_message(WM_DISPLAY_OFF);
+		
+		httpd_resp_set_status(req, http_200_hdr);
+		httpd_resp_set_type(req, http_content_type_json);
+		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
+		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
+		httpd_resp_send(req, NULL, 0);
+	}
+	else if(strcmp(req->uri, http_set_display_on_url) == 0){
+		ESP_LOGI(TAG, "Turn on display");
+
+		wifi_manager_send_message(WM_DISPLAY_ON);
+		
+		httpd_resp_set_status(req, http_200_hdr);
+		httpd_resp_set_type(req, http_content_type_json);
+		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
+		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
+		httpd_resp_send(req, NULL, 0);
+	}
+	else if(strcmp(req->uri, http_set_strip_off_url) == 0){
+		ESP_LOGI(TAG, "Turn off strip");
+
+		wifi_manager_send_message(WM_STRIP_OFF);
+		
+		httpd_resp_set_status(req, http_200_hdr);
+		httpd_resp_set_type(req, http_content_type_json);
+		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
+		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
+		httpd_resp_send(req, NULL, 0);
+	}
+	else if(strcmp(req->uri, http_set_strip_on_url) == 0){
+		ESP_LOGI(TAG, "Turn on strip");
+
+		wifi_manager_send_message(WM_STRIP_ON);
 		
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
@@ -473,6 +518,22 @@ void http_app_stop(){
 			free(http_settings_url);
 			http_settings_url = NULL;
 		}
+		if(http_set_display_off_url){
+			free(http_set_display_off_url);
+			http_set_display_off_url = NULL;
+		}
+		if(http_set_display_on_url){
+			free(http_set_display_on_url);
+			http_set_display_on_url = NULL;
+		}
+		if(http_set_strip_off_url){
+			free(http_set_strip_off_url);
+			http_set_strip_off_url = NULL;
+		}
+		if(http_set_strip_on_url){
+			free(http_set_strip_on_url);
+			http_set_strip_on_url = NULL;
+		}
 		if(http_settings_page_url){
 			free(http_settings_page_url);
 			http_settings_page_url = NULL;
@@ -534,6 +595,10 @@ void http_app_start(bool lru_purge_enable){
 			const char page_ap[] = "ap.json";
 			const char page_status[] = "status.json";
 			//ADDED SETTINGS
+			const char page_set_display_off[] = "set_display_off";
+			const char page_set_display_on[] = "set_display_on";
+			const char page_set_strip_off[] = "set_strip_off";
+			const char page_set_strip_on[] = "set_strip_on";
 			const char page_settings[] = "settings.json";
 			const char page_settings_page[] = "settings.html";
 			const char page_min[] = "jquery.min.js";
@@ -563,6 +628,10 @@ void http_app_start(bool lru_purge_enable){
 			http_ap_url = http_app_generate_url(page_ap);
 			http_status_url = http_app_generate_url(page_status);
 			//ADDED SETTINGS
+			http_set_display_off_url = http_app_generate_url(page_set_display_off);
+			http_set_display_on_url = http_app_generate_url(page_set_display_on);
+			http_set_strip_off_url = http_app_generate_url(page_set_strip_off);
+			http_set_strip_on_url = http_app_generate_url(page_set_strip_on);
 			http_settings_url = http_app_generate_url(page_settings);
 			http_settings_page_url = http_app_generate_url(page_settings_page);
 			http_min_url = http_app_generate_url(page_min);

@@ -1351,6 +1351,38 @@ void wifi_manager( void * pvParameters ){
 				
 				break;
 
+			case WM_DISPLAY_OFF:
+				ESP_LOGI(TAG, "MESSAGE: display off");
+
+				/* callback */
+				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				
+				break;
+
+			case WM_DISPLAY_ON:
+				ESP_LOGI(TAG, "MESSAGE: display on");
+
+				/* callback */
+				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				
+				break;
+
+			case WM_STRIP_OFF:
+				ESP_LOGI(TAG, "MESSAGE: strip off");
+
+				/* callback */
+				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				
+				break;
+
+			case WM_STRIP_ON:
+				ESP_LOGI(TAG, "MESSAGE: strip on");
+
+				/* callback */
+				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
+				
+				break;
+
 			default:
 				break;
 
