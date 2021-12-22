@@ -143,7 +143,7 @@ static esp_err_t http_server_delete_handler(httpd_req_t *req){
 		httpd_resp_set_hdr(req, http_pragma_hdr, http_pragma_no_cache);
 		httpd_resp_send(req, NULL, 0);
 	}
-	else if(strcmp(req->uri, http_settings_url) == 0 || strcmp(req->uri, http_set_display_off_url || strcmp(req->uri, http_set_display_on_url || strcmp(req->uri, http_set_strip_off_url || strcmp(req->uri, http_set_strip_on_url) == 0){
+	else if(strcmp(req->uri, http_settings_url) == 0 || strcmp(req->uri, http_set_display_off_url) == 0 || strcmp(req->uri, http_set_display_on_url) == 0 || strcmp(req->uri, http_set_strip_off_url) == 0 || strcmp(req->uri, http_set_strip_on_url) == 0){
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
 		httpd_resp_set_hdr(req, http_cache_control_hdr, http_cache_control_no_cache);
@@ -257,7 +257,7 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 	else if(strcmp(req->uri, http_set_display_off_url) == 0){
 		ESP_LOGI(TAG, "Turn off display");
 
-		wifi_manager_send_message(WM_DISPLAY_OFF);
+		wifi_manager_send_message(WM_DISPLAY_OFF, NULL);
 		
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
@@ -268,7 +268,7 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 	else if(strcmp(req->uri, http_set_display_on_url) == 0){
 		ESP_LOGI(TAG, "Turn on display");
 
-		wifi_manager_send_message(WM_DISPLAY_ON);
+		wifi_manager_send_message(WM_DISPLAY_ON, NULL);
 		
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
@@ -279,7 +279,7 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 	else if(strcmp(req->uri, http_set_strip_off_url) == 0){
 		ESP_LOGI(TAG, "Turn off strip");
 
-		wifi_manager_send_message(WM_STRIP_OFF);
+		wifi_manager_send_message(WM_STRIP_OFF, NULL);
 		
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);
@@ -290,7 +290,7 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 	else if(strcmp(req->uri, http_set_strip_on_url) == 0){
 		ESP_LOGI(TAG, "Turn on strip");
 
-		wifi_manager_send_message(WM_STRIP_ON);
+		wifi_manager_send_message(WM_STRIP_ON, NULL);
 		
 		httpd_resp_set_status(req, http_200_hdr);
 		httpd_resp_set_type(req, http_content_type_json);

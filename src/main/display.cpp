@@ -51,8 +51,8 @@ class Display {
     char led_letters[64];
     uint16_t led_colors[64] = {0};
     
-    bool display_on;
-    bool strip_on;
+    bool display_on = true;
+    bool strip_on = true;
 
     const char matrix_clockface_v1[8][8] = 
     {
@@ -367,6 +367,7 @@ class Display {
           matrix[i].setHSV(0, 0, 0);
           FastLED.show();
           delay(50);
+        }
       }
     }
 
@@ -681,8 +682,11 @@ class Display {
       if(mode==1) //schalten
       { 
         ESP_LOGI(TAG2, "schalte LEDs um");
-        iteriere_leds_in_liste(0, 0, true, 100);
-        iteriere_leds_in_liste(1, 1, true, 100);
+        if(display_on)
+        { 
+          iteriere_leds_in_liste(0, 0, true, 100);
+          iteriere_leds_in_liste(1, 1, true, 100);
+        }
         liste_aufbau.clear();
         liste_abbau.clear();
         mode = -1;
@@ -690,7 +694,8 @@ class Display {
       if(mode==2) //fade over
       {
         ESP_LOGI(TAG2, "fade LEDs");
-        fadeLeds();
+        if(display_on)
+        { fadeLeds(); }
         liste_aufbau.clear();
         liste_abbau.clear();
         mode = -1;

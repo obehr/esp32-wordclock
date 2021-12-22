@@ -163,19 +163,20 @@ void cb_received_config(void *pvParameter){
 void cb_display_off(void *pvParameter){
   ESP_LOGI(TAG, "callback display off");
   my_display.mode = 6;
+}
 
 void cb_display_on(void *pvParameter){
   ESP_LOGI(TAG, "callback display on");
   my_display.mode = 7;
-
+}
 void cb_strip_off(void *pvParameter){
   ESP_LOGI(TAG, "callback strip off");
   my_display.mode = 4;
-
+}
 void cb_strip_on(void *pvParameter){
   ESP_LOGI(TAG, "callback strip on");
   my_display.mode = 5;
-
+}
 
 
 void time_sync_notification_cb(struct timeval *tv)
