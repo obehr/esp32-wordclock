@@ -192,7 +192,7 @@ void wifi_manager_start(){
 	esp_log_level_set("wifi", ESP_LOG_NONE);
 
 	/* initialize flash memory */
-	nvs_flash_init();
+	//nvs_flash_init();
 	ESP_ERROR_CHECK(nvs_sync_create()); /* semaphore for thread synchronization on NVS memory */
 
 	/* memory allocation */

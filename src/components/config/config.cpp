@@ -8,7 +8,8 @@
 #include "cJSON.h"
 #include <esp_log.h>
 #include "esp_spi_flash.h"
-
+#include "nvs_flash.h"
+#include "nvs.h"
 
 static const char TAG3[] = "config";
 
@@ -34,8 +35,67 @@ static my_config valid_config;
 
 static my_config default_config;
 
+static my_config active_config;
+
+static int32_t restart_counter = 0;
+
+static void init_config()
+{
+  ESP_LOGI(TAG3, "Read config from nvs");
+  active_config.hour = 0;
+  active_config.minute = 0;
+  active_config.use_ntp = false;
+  active_config.time_offset = -1;
+  active_config.color_its_oclock = 50;
+  active_config.color_minutes = 100;
+  active_config.color_past_to = 150;
+  active_config.color_hours = 200;
+  active_config.saturation = 255;
+  active_config.brightness = 100;
+  active_config.time_changed = false;
+  active_config.color_changed = false;
+  active_config.config_changed = false;
+
+  esp_err_t err;
+  nvs_handle_t my_handle;
+  err = nvs_open("storage", NVS_READWRITE, &my_handle);
+  if (err != ESP_OK) {
+    ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+  } else {
+      // Read
+      
+      ESP_LOGI(TAG3, "Reading hour from NVS ... ");
+      err = nvs_get_u16(my_handle, "hour", &active_config.hour);
+      if(err == ESP_OK)
+      { ESP_LOGI(TAG3, "Done %d", active_config.hour); }
+      else
+      { ESP_LOGI(TAG3, "Failed %d", active_config.hour); }
+
+      ESP_LOGI(TAG3, "Reading time_offset from NVS ... ");
+      err = nvs_get_i16(my_handle, "time_offset", &active_config.time_offset);
+      if(err == ESP_OK)
+      { ESP_LOGI(TAG3, "Done %d", active_config.time_offset); }
+      else
+      { ESP_LOGI(TAG3, "Failed %d", active_config.time_offset); }
+  }
+  config_available = true;
+}
+
 static void init_default_config()
 {
+  /*
+  uint16_t hour;
+  uint16_t minute;
+  bool use_ntp;
+  int16_t time_offset;
+  uint16_t color_its_oclock;
+  uint16_t color_minutes;
+  uint16_t color_past_to;
+  uint16_t color_hours;
+  uint16_t saturation;
+  uint16_t brightness;
+  */
+
   ESP_LOGI(TAG3, "Initialize default config");
   default_config.hour = 0;
   default_config.minute = 0;
@@ -50,17 +110,44 @@ static void init_default_config()
   default_config.time_changed = false;
   default_config.color_changed = false;
   default_config.config_changed = false;
+
+  // Open
+    printf("\n");
+    printf("Opening Non-Volatile Storage (NVS) handle... ");
+    esp_err_t err;
+    nvs_handle_t my_handle;
+    err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) {
+        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+    } else {
+        printf("Done\n");
+
+        // Read
+        printf("Reading restart counter from NVS ... ");
+        err = nvs_get_i32(my_handle, "restart_counter", &restart_counter);
+        switch (err) {
+            case ESP_OK:
+                printf("Done\n");
+                printf("Restart counter = %d\n", restart_counter);
+                break;
+            case ESP_ERR_NVS_NOT_FOUND:
+                printf("The value is not initialized yet!\n");
+                break;
+            default :
+                printf("Error (%s) reading!\n", esp_err_to_name(err));
+        }
+    }
 }
 
-static my_config* get_default_config()
+static my_config* get_initial_config()
 {
-  init_default_config();
+  init_config();
   
-  ESP_LOGI(TAG3, "Passing default config");
-  return &default_config;
+  ESP_LOGI(TAG3, "Passing active config");
+  return &active_config;
 }
 
-static void* get_config()
+/*static void* get_config()
 {
   if(config_available)
   {
@@ -73,7 +160,17 @@ static void* get_config()
     ESP_LOGI(TAG3, "Config has not changed");
     return (void*)&default_config;
   }
+}*/
+
+static void* get_config()
+{
+  if(!config_available)
+  { init_config(); }
+
+  ESP_LOGI(TAG3, "Passing active config");
+  return (void*)&active_config;
 }
+
 
 static int16_t get_number(cJSON *json_object)
 {
@@ -107,19 +204,7 @@ static void save_config(char *config_raw, size_t length)
   */
 
   if(!config_available)
-  {
-    init_default_config();
-    valid_config.hour = default_config.hour;
-    valid_config.minute = default_config.minute;
-    valid_config.use_ntp = default_config.use_ntp;
-    valid_config.time_offset = default_config.time_offset;
-    valid_config.color_its_oclock = default_config.color_its_oclock;
-    valid_config.color_minutes = default_config.color_minutes;
-    valid_config.color_past_to = default_config.color_past_to;
-    valid_config.color_hours = default_config.color_hours;
-    valid_config.saturation = default_config.saturation;
-    valid_config.brightness = default_config.brightness;
-  }
+  { init_config(); }
 
   cJSON *json = cJSON_ParseWithLength(config_raw, length);
   char *string = cJSON_Print(json);
@@ -131,24 +216,24 @@ static void save_config(char *config_raw, size_t length)
   bool color_changed = false;
 
   int16_t value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "hour"));
-  if(value_casted != -1 && value_casted < 24 && value_casted != valid_config.hour)
+  if(value_casted != -1 && value_casted < 24 && value_casted != active_config.hour)
   {
-    valid_config.hour = value_casted;
+    active_config.hour = value_casted;
     time_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "minute"));
-  if(value_casted != -1 && value_casted < 24 && value_casted != valid_config.minute)
+  if(value_casted != -1 && value_casted < 24 && value_casted != active_config.minute)
   {
-    valid_config.minute = value_casted;
+    active_config.minute = value_casted;
     time_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "ntpUse"));
-  if((value_casted == 1) != valid_config.use_ntp)
+  if((value_casted == 1) != active_config.use_ntp)
   {
     ESP_LOGI(TAG3, "casted ntp value %d", value_casted);
-    valid_config.use_ntp = (value_casted==1);
+    active_config.use_ntp = (value_casted==1);
     time_changed = true;
   }
   else
@@ -159,10 +244,10 @@ static void save_config(char *config_raw, size_t length)
   if(strcmp(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring, "") != 0)
   {
     int16_t value_casted = atoi(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
-    if(value_casted>-5 && value_casted<5 && value_casted != valid_config.time_offset)
+    if(value_casted>-5 && value_casted<5 && value_casted != active_config.time_offset)
     {
       ESP_LOGI(TAG3, "casted timeOffset value %d", value_casted);
-      valid_config.time_offset = value_casted;
+      active_config.time_offset = value_casted;
       time_changed = true;
     }
     else
@@ -176,52 +261,51 @@ static void save_config(char *config_raw, size_t length)
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c1"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_its_oclock)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_its_oclock)
   {
-    valid_config.color_its_oclock = value_casted;
+    active_config.color_its_oclock = value_casted;
     color_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c2"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_minutes)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_minutes)
   {
-    valid_config.color_minutes = value_casted;
+    active_config.color_minutes = value_casted;
     color_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c3"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_past_to)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_past_to)
   {
-    valid_config.color_past_to = value_casted;
+    active_config.color_past_to = value_casted;
     color_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c4"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.color_hours)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_hours)
   {
-    valid_config.color_hours = value_casted;
+    active_config.color_hours = value_casted;
     color_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "bri"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.brightness)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.brightness)
   {
-    valid_config.brightness = value_casted;
+    active_config.brightness = value_casted;
     color_changed = true;
   }
 
   value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "sat"));
-  if(value_casted != -1 && value_casted <= 255 && value_casted != valid_config.saturation)
+  if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.saturation)
   {
-    valid_config.saturation = value_casted;
+    active_config.saturation = value_casted;
     color_changed = true;
   }
 
 
-  valid_config.time_changed = time_changed;
-  valid_config.color_changed = color_changed;
-  valid_config.config_changed = color_changed || time_changed;
-  config_available = true;
+  active_config.time_changed = time_changed;
+  active_config.color_changed = color_changed;
+  active_config.config_changed = color_changed || time_changed;
   /*
   uint16_t minute_casted = atoi(minute_json->valuestring);
   bool use_ntp_casted = (atoi(minute_json->valuestring) == 1);
@@ -241,5 +325,30 @@ static void save_config(char *config_raw, size_t length)
   ESP_LOGI(TAG3, "value is %s", hour_json->valuestring);
   ESP_LOGI(TAG3, "value is %d", valid_config.hour);
   */
-}
 
+  // Open
+
+  if(active_config.config_changed)
+  {
+    printf("\n");
+    printf("Opening Non-Volatile Storage (NVS) handle... ");
+    esp_err_t err;
+    nvs_handle_t my_handle;
+    err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) {
+        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+    } else {
+        printf("Done\n");
+
+     // Write
+     if(time_changed)
+     {
+        printf("Updating time values in NVS ... ");
+        err = nvs_set_u16(my_handle, "hour", active_config.hour);
+        err = nvs_set_i16(my_handle, "time_offset", active_config.time_offset);
+        
+        printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
+     }
+    }
+  }
+}

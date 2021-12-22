@@ -32,6 +32,8 @@
 #include "display.cpp"
 #include "config.cpp"
 //#include "sntp.cpp"
+#include "nvs_flash.h"
+#include "nvs.h"
 
 static const char TAG[] = "wordclock";
 
@@ -43,6 +45,7 @@ const char *apName1 = "WordclockV1";
 const char *apName2 = "WordclockV2";
 const char *apName3 = "WordclockV3";
 
+bool ntp_initialized=false;
 int aktuelleMinute;
 int aktuelleStunde;
 int letzteMinute;
@@ -72,13 +75,97 @@ time_t now;
 
 
 
-
+void time_sync_notification_cb(struct timeval *tv)
+{
+    ESP_LOGI(TAG, "Notification of a time synchronization event");
+    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+    {
+        ESP_LOGI(TAG, "Time was synched (again)");
+        
+        struct tm timeinfo;
+        char strftime_buf[64];
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        ESP_LOGI(TAG, "The time after verified sync: %s", strftime_buf);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Time sync process is ongoing or was reset");
+    }
+}
 
 
 /**
  * @brief this is an exemple of a callback that you can setup in your own app to get notified of wifi manager event.
  */
 
+void set_timezone_offset(int16_t offset)
+{
+  switch(offset) {
+    case -4: setenv("TZ", "UTC-4", 1); tzset(); break;
+    case -3: setenv("TZ", "UTC-3", 1); tzset(); break;
+    case -2: setenv("TZ", "UTC-2", 1); tzset(); break;
+    case -1: setenv("TZ", "UTC-1", 1); tzset(); break;
+    case 0: setenv("TZ", "UTC0", 1); tzset(); break;
+    case 1: setenv("TZ", "UTC1", 1); tzset(); break;
+    case 2: setenv("TZ", "UTC2", 1); tzset(); break;
+    case 3: setenv("TZ", "UTC3", 1); tzset(); break;
+    case 4: setenv("TZ", "UTC4", 1); tzset(); break;
+    default: ESP_LOGI(TAG, "unhandled offset"); break;
+  }
+}
+
+void set_ntp_server(bool use_ntp)
+{
+  if(use_ntp)
+  {
+    ESP_LOGI(TAG, "Activate NTP");
+    if(!ntp_initialized)
+    {
+      ESP_LOGI(TAG, "Initializing SNTP");
+      sntp_setoperatingmode(SNTP_OPMODE_POLL);
+      sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+      ntp_initialized = true;
+    }
+    sntp_setservername(0, "fritz.box");
+    sntp_setservername(1, "de.pool.ntp.org");
+
+    sntp_init();
+  }
+  else
+  {
+    ESP_LOGI(TAG, "Deactivate NTP");
+    sntp_setservername(0, "localhost");
+  }
+}
+
+void set_time_config(uint16_t hour, uint16_t minute, bool use_ntp, int16_t offset)
+{
+  ESP_LOGI(TAG, "got new time config: %d, %d, %d, %d", hour ,minute, use_ntp, offset);
+  set_ntp_server(use_ntp);
+  set_timezone_offset(offset);
+
+  if(!use_ntp)
+  {
+    char strftime_buf[64];
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+    ESP_LOGI(TAG, "The time before setting it: %s", strftime_buf);
+    
+    struct timeval tv;
+    //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
+    tv.tv_sec = 1633644000+3600*hour+60*minute;
+    settimeofday(&tv, NULL);
+
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+    ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
+  }
+}
 
 void cb_received_config(void *pvParameter){
   ESP_LOGI(TAG, "callback received_config");
@@ -99,54 +186,8 @@ void cb_received_config(void *pvParameter){
 
   if(current_config->time_changed)
   {
-    ESP_LOGI(TAG, "got new time config: %d, %d, %d, %d", current_config->hour ,current_config->minute, current_config->use_ntp, current_config->time_offset);
+    set_time_config(current_config->hour, current_config->minute, current_config->use_ntp, current_config->time_offset);
     
-    if(current_config->use_ntp)
-    {
-      ESP_LOGI(TAG, "Activate NTP");
-      sntp_setservername(0, "fritz.box");
-      //sntp_setoperatingmode(SNTP_OPMODE_POLL);
-      switch(current_config->time_offset) {
-        case -4: setenv("TZ", "UTC-4", 1); tzset(); break;
-        case -3: setenv("TZ", "UTC-3", 1); tzset(); break;
-        case -2: setenv("TZ", "UTC-2", 1); tzset(); break;
-        case -1: setenv("TZ", "UTC-1", 1); tzset(); break;
-        case 0: setenv("TZ", "UTC0", 1); tzset(); break;
-        case 1: setenv("TZ", "UTC1", 1); tzset(); break;
-        case 2: setenv("TZ", "UTC2", 1); tzset(); break;
-        case 3: setenv("TZ", "UTC3", 1); tzset(); break;
-        case 4: setenv("TZ", "UTC4", 1); tzset(); break;
-        default: ESP_LOGI(TAG, "unhandled offset"); break;
-      }
-      sntp_init();
-    }
-    else
-    {
-      ESP_LOGI(TAG, "Deactivate NTP");
-      sntp_setservername(0, "localhost");
-      //sntp_setoperatingmode(SNTP_OPMODE_LISTENONLY);
-
-      char strftime_buf[64];
-      struct tm timeinfo;
-      time(&now);
-      localtime_r(&now, &timeinfo);
-      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-      ESP_LOGI(TAG, "The time before setting it: %s", strftime_buf);
-      
-
-      struct timeval tv;
-      //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
-      tv.tv_sec = 1633644000+3600*current_config->hour+60*current_config->minute;
-      settimeofday(&tv, NULL);
-
-      time(&now);
-      localtime_r(&now, &timeinfo);
-      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-      ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
-    }
-
-
-
     //reset boolean to false
     current_config->time_changed = false;
   }
@@ -179,35 +220,7 @@ void cb_strip_on(void *pvParameter){
 }
 
 
-void time_sync_notification_cb(struct timeval *tv)
-{
-    ESP_LOGI(TAG, "Notification of a time synchronization event");
-    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
-    {
-        ESP_LOGI(TAG, "Time was synched (again)");
-        
-        struct tm timeinfo;
-        char strftime_buf[64];
-        time(&now);
-        localtime_r(&now, &timeinfo);
-        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-        ESP_LOGI(TAG, "The time after verified sync: %s", strftime_buf);
-    }
-    else
-    {
-        ESP_LOGI(TAG, "Time sync process is ongoing or was reset");
-    }
-}
 
-void initialize_sntp()
-{
-    ESP_LOGI(TAG, "Initializing SNTP");
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "fritz.box");
-    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
-
-    sntp_init();
-}
 
 bool wait_for_sync()
 {
@@ -247,9 +260,6 @@ void cb_connection_ok(void *pvParameter){
   localtime_r(&now, &timeinfo);
   strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
   ESP_LOGI(TAG, "The time before sntp setup is: %s", strftime_buf);
-
-  ESP_LOGI(TAG, "Get time over NTP");
-  initialize_sntp();
 }
 
 static void print_time(void *pvParameters)
@@ -381,16 +391,17 @@ void app_main() {
 
   // this is a good test because it uses the GPIO ports, these are 4 wire not 3 wire
   //FastLED.addLeds<APA102, 13, 15>(leds, NUM_LEDS);
-  current_config = get_default_config();
-  int16_t current_hour = current_config->hour;
-  ESP_LOGI(TAG, "got hour from config %d", current_hour);
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+      // NVS partition was truncated and needs to be erased
+      // Retry nvs_flash_init
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      err = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK( err );
+  current_config = get_initial_config();
+  set_time_config(current_config->hour ,current_config->minute, current_config->use_ntp, current_config->time_offset);
   
-
-  setenv("TZ", "UTC-1", 1);
-  tzset();
-
-  
-
 /* start the wifi manager */
 	wifi_manager_start();
 	/* register a callback as an example to how you can integrate your code with the wifi manager */
