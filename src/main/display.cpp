@@ -17,8 +17,8 @@
 #define STRIP_DATA_PIN 32
 #define COLOR_ORDER GRB
 #define VARIANT_LED_NUMBERING 1
-#define VARIANT_CLOCKFACE 2
-#define ORIENTATION 3
+#define VARIANT_CLOCKFACE 0 //kueche 2 //saskia 0
+#define ORIENTATION 2
 
 static const char TAG2[] = "display";
 

@@ -219,9 +219,6 @@ void cb_strip_on(void *pvParameter){
   my_display.mode = 5;
 }
 
-
-
-
 bool wait_for_sync()
 {
     int retry = 0;
@@ -293,7 +290,6 @@ static void loop_time(void *pvParameters)
     vTaskDelay( pdMS_TO_TICKS(10000) );
   }
 
-  
   uint16_t letzte_fuenfminute =- 1;
   uint16_t letzte_stunde =- 1;
   uint16_t aktuelle_fuenfminute;

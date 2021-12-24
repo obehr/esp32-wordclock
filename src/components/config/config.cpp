@@ -62,81 +62,53 @@ static void init_config()
   if (err != ESP_OK) {
     ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
   } else {
-      // Read
-      
-      ESP_LOGI(TAG3, "Reading hour from NVS ... ");
-      err = nvs_get_u16(my_handle, "hour", &active_config.hour);
-      if(err == ESP_OK)
-      { ESP_LOGI(TAG3, "Done %d", active_config.hour); }
-      else
-      { ESP_LOGI(TAG3, "Failed %d", active_config.hour); }
+    // Read
+    
+    err = nvs_get_u16(my_handle, "hour", &active_config.hour);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read hour from NVS %d", active_config.hour); }
 
-      ESP_LOGI(TAG3, "Reading time_offset from NVS ... ");
-      err = nvs_get_i16(my_handle, "time_offset", &active_config.time_offset);
-      if(err == ESP_OK)
-      { ESP_LOGI(TAG3, "Done %d", active_config.time_offset); }
-      else
-      { ESP_LOGI(TAG3, "Failed %d", active_config.time_offset); }
+    err = nvs_get_u16(my_handle, "minute", &active_config.minute);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read minute from NVS %d", active_config.minute); }
+
+    uint8_t int_use_ntp;
+    err = nvs_get_u8(my_handle, "use_ntp", &int_use_ntp);
+    if(err == ESP_OK)
+    { 
+      active_config.use_ntp = (int_use_ntp==1);
+      ESP_LOGI(TAG3, "Read use_ntp from NVS %d", active_config.use_ntp);
+    }
+
+    err = nvs_get_i16(my_handle, "time_offset", &active_config.time_offset);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read time_offset from NVS %d", active_config.time_offset); }
+
+    err = nvs_get_u16(my_handle, "color_its_oclock", &active_config.color_its_oclock);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read color_its_oclock from NVS %d", active_config.color_its_oclock); }
+
+    err = nvs_get_u16(my_handle, "color_minutes", &active_config.color_minutes);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read color_minutes from NVS %d", active_config.color_minutes); }
+
+    err = nvs_get_u16(my_handle, "color_past_to", &active_config.color_past_to);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read color_past_to from NVS %d", active_config.color_past_to); }
+
+    err = nvs_get_u16(my_handle, "color_hours", &active_config.color_hours);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read color_hours from NVS %d", active_config.color_hours); }   
+
+    err = nvs_get_u16(my_handle, "saturation", &active_config.saturation);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read saturation from NVS %d", active_config.saturation); }
+
+    err = nvs_get_u16(my_handle, "brightness", &active_config.brightness);
+    if(err == ESP_OK)
+    { ESP_LOGI(TAG3, "Read brightness from NVS %d", active_config.brightness); }   
   }
   config_available = true;
-}
-
-static void init_default_config()
-{
-  /*
-  uint16_t hour;
-  uint16_t minute;
-  bool use_ntp;
-  int16_t time_offset;
-  uint16_t color_its_oclock;
-  uint16_t color_minutes;
-  uint16_t color_past_to;
-  uint16_t color_hours;
-  uint16_t saturation;
-  uint16_t brightness;
-  */
-
-  ESP_LOGI(TAG3, "Initialize default config");
-  default_config.hour = 0;
-  default_config.minute = 0;
-  default_config.use_ntp = false;
-  default_config.time_offset = -1;
-  default_config.color_its_oclock = 50;
-  default_config.color_minutes = 100;
-  default_config.color_past_to = 150;
-  default_config.color_hours = 200;
-  default_config.saturation = 255;
-  default_config.brightness = 100;
-  default_config.time_changed = false;
-  default_config.color_changed = false;
-  default_config.config_changed = false;
-
-  // Open
-    printf("\n");
-    printf("Opening Non-Volatile Storage (NVS) handle... ");
-    esp_err_t err;
-    nvs_handle_t my_handle;
-    err = nvs_open("storage", NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) {
-        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    } else {
-        printf("Done\n");
-
-        // Read
-        printf("Reading restart counter from NVS ... ");
-        err = nvs_get_i32(my_handle, "restart_counter", &restart_counter);
-        switch (err) {
-            case ESP_OK:
-                printf("Done\n");
-                printf("Restart counter = %d\n", restart_counter);
-                break;
-            case ESP_ERR_NVS_NOT_FOUND:
-                printf("The value is not initialized yet!\n");
-                break;
-            default :
-                printf("Error (%s) reading!\n", esp_err_to_name(err));
-        }
-    }
 }
 
 static my_config* get_initial_config()
@@ -345,9 +317,20 @@ static void save_config(char *config_raw, size_t length)
      {
         printf("Updating time values in NVS ... ");
         err = nvs_set_u16(my_handle, "hour", active_config.hour);
+        err = nvs_set_u16(my_handle, "minute", active_config.minute);
+        uint8_t int_use_ntp = (active_config.use_ntp)?1:0;
+        err = nvs_set_u8(my_handle, "int_use_ntp", int_use_ntp);
         err = nvs_set_i16(my_handle, "time_offset", active_config.time_offset);
-        
         printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
+     }
+     if(color_changed)
+     {
+        err = nvs_set_u16(my_handle, "color_its_oclock", active_config.color_its_oclock);
+        err = nvs_set_u16(my_handle, "color_minutes", active_config.color_minutes);
+        err = nvs_set_u16(my_handle, "color_past_to", active_config.color_past_to);
+        err = nvs_set_u16(my_handle, "color_hours", active_config.color_hours);
+        err = nvs_set_u16(my_handle, "saturation", active_config.saturation);
+        err = nvs_set_u16(my_handle, "brightness", active_config.brightness);
      }
     }
   }
