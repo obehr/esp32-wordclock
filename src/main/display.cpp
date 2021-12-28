@@ -11,14 +11,14 @@
 
 //#define NUM_LEDS 512
 #define NUM_LEDS 64 //unused
-#define DATA_PIN 26
+#define DATA_PIN 32
 #define LED_TYPE    WS2812B
 #define STRIP_NUM_LEDS 9 //unused
-#define STRIP_DATA_PIN 32
+//#define STRIP_DATA_PIN 32
 #define COLOR_ORDER GRB
-#define VARIANT_LED_NUMBERING 1
-#define VARIANT_CLOCKFACE 0 //kueche 2 //saskia 0
-#define ORIENTATION 2
+#define VARIANT_LED_NUMBERING 2 //mama 2 //saskia u kueche 1
+#define VARIANT_CLOCKFACE 0 //kueche 2 //saskia 0 //mama 0
+#define ORIENTATION 0 //saskia und kueche 2 mama 0
 
 static const char TAG2[] = "display";
 
@@ -52,7 +52,6 @@ class Display {
     uint16_t led_colors[64] = {0};
     
     bool display_on = true;
-    bool strip_on = true;
 
     const char matrix_clockface_v1[8][8] = 
     {
@@ -89,15 +88,19 @@ class Display {
       { 'u', 'i', 'x', 'e', 't', 'e', 'n', 'e' },
       { 'r', 'n', 'o', 'c', 'l', 'o', 'c', 'k' }
     };
-
+    
+    #ifdef STRIP_DATA_PIN
     const int16_t strip_normal_brightness[33] = 
     { 42, 43, 44, 45, 47, 49, 51, 54, 57, 60, 65, 70, 75, 80, 90, 100, 110, 100, 90, 80, 75, 70, 65, 60, 57, 54, 51, 49, 47, 45, 44, 43, 42 };
     
     const int16_t strip_add_brightness[33] = 
     { 31, 32, 33, 34, 35, 37, 40, 42, 45, 50, 55, 60, 65, 70, 75, 80, 90, 80, 75, 70, 65, 60, 55, 50, 45, 42, 40, 37, 35, 34, 33, 32, 31};
-
+    
     CRGBW leds[33];
     CRGB *ledsRGB = (CRGB *) &leds[0];
+
+    bool strip_on = true;
+    #endif
 
     CRGBArray<64> matrix;
 
@@ -113,8 +116,6 @@ class Display {
       liste_effekt.clear();
       liste_nachricht.clear();
     }
-
-    
 
     char get_letter(int16_t led_id)
     {
@@ -150,8 +151,8 @@ class Display {
       wort_past[2] = matrix_leds[6][2];
       wort_past[3] = (v==1) ? matrix_leds[6][3] : matrix_leds[7][2];
 
-      wort_to[0] = (v==2) ? matrix_leds[0][3] : matrix_leds[6][3];
-      wort_to[1] = (v==2) ? matrix_leds[1][3] : matrix_leds[7][2];
+      wort_to[0] = (v==1) ? matrix_leds[6][3] : matrix_leds[0][3];
+      wort_to[1] = (v==1) ? matrix_leds[7][2] : matrix_leds[1][3];
       
       wort_min_five[0] = matrix_leds[3][1];
       wort_min_five[1] = matrix_leds[4][1];
@@ -347,7 +348,7 @@ class Display {
     ## End setup function ##
     ########################
     */
-
+    #ifdef STRIP_DATA_PIN
     void set_strip(bool status)
     {
       strip_on = status;
@@ -357,6 +358,7 @@ class Display {
         delay(50);
       }
     }
+    #endif
 
     void set_display(bool status)
     {
@@ -399,6 +401,7 @@ class Display {
       return (neueHelligkeit<0)?0:(neueHelligkeit>volleHelligkeit)?volleHelligkeit:neueHelligkeit;
     }
 
+    #ifdef STRIP_DATA_PIN
     void flashStrip()
     {
         //effektdauert gibt die Anzahl der Schritte an
@@ -445,6 +448,7 @@ class Display {
           FastLED.show();
         }      
     }
+    #endif
 
     void flashLeds()
     {
@@ -700,13 +704,21 @@ class Display {
         liste_abbau.clear();
         mode = -1;
       }
+      #ifndef STRIP_DATA_PIN
+      else if(mode==3) //animate leds in list 3
+      {
+        if(display_on)
+        { flashLeds(); }
+      }
+      #endif
+      #ifdef STRIP_DATA_PIN
       else if(mode==3) //animate leds in list 3
       {
         if(display_on)
         { flashLeds(); }
         if(strip_on)
         { flashStrip(); }
-      }
+      }      
       else if(mode==4) //turn strip off
       {
         set_strip(false);
@@ -715,6 +727,7 @@ class Display {
       {
         set_strip(true);
       }
+      #endif
       else if(mode==6) //turn display off
       {
         set_display(false);
@@ -741,9 +754,14 @@ class Display {
       init_words(VARIANT_CLOCKFACE);
       ESP_LOGI(TAG2, "init letters");
       init_letters(VARIANT_CLOCKFACE);
-      FastLED.addLeds<LED_TYPE, STRIP_DATA_PIN, RGB>(ledsRGB, getRGBWsize(33));
+
       ESP_LOGI(TAG2, "adding leds");
       FastLED.addLeds<LED_TYPE, DATA_PIN>(matrix, 64);
+      
+      #ifdef STRIP_DATA_PIN
+      FastLED.addLeds<LED_TYPE, STRIP_DATA_PIN, RGB>(ledsRGB, getRGBWsize(33));
+      #endif
+      
       FastLED.setMaxPowerInVoltsAndMilliamps(12,2000);
 
       ESP_LOGI(TAG2, "show");
@@ -806,13 +824,11 @@ class Display {
         }
     }
 
-    void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours, uint16_t brightness, uint16_t saturation)
+    void setze_farben(uint16_t color_its_oclock, uint16_t color_minutes, uint16_t color_past_to, uint16_t color_hours)
     {
-      ESP_LOGI(TAG2, "set colors to c1 %d, c2 %d, c3 %d, c4 %d, bri %d, sat %d", color_its_oclock, color_minutes, color_past_to, color_hours, brightness, saturation);
+      ESP_LOGI(TAG2, "set colors to c1 %d, c2 %d, c3 %d, c4 %d", color_its_oclock, color_minutes, color_past_to, color_hours);
       bool aufbau[3] = {false, true, false};
       
-      led_brightness = brightness;
-      led_saturation = saturation;
       reihe_leds_in_listen(wort_its, 3, aufbau);
       reihe_leds_in_listen(wort_oclock, 6, aufbau);
       setze_farbe_in_liste(color_its_oclock);
@@ -832,5 +848,15 @@ class Display {
         reihe_stunden_in_listen(i, aufbau); 
       }
       setze_farbe_in_liste(color_hours);
+    }
+
+    void setze_helligkeit(uint16_t brightness)
+    {
+      led_brightness = brightness;
+    }
+
+    void setze_saettigung(uint16_t saturation)
+    {
+      led_saturation = saturation;
     }
 };

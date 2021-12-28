@@ -102,6 +102,9 @@ void time_sync_notification_cb(struct timeval *tv)
 
 void set_timezone_offset(int16_t offset)
 {
+  setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+  tzset();
+  /*
   switch(offset) {
     case -4: setenv("TZ", "UTC-4", 1); tzset(); break;
     case -3: setenv("TZ", "UTC-3", 1); tzset(); break;
@@ -113,7 +116,7 @@ void set_timezone_offset(int16_t offset)
     case 3: setenv("TZ", "UTC3", 1); tzset(); break;
     case 4: setenv("TZ", "UTC4", 1); tzset(); break;
     default: ESP_LOGI(TAG, "unhandled offset"); break;
-  }
+  }*/
 }
 
 void set_ntp_server(bool use_ntp)
@@ -148,22 +151,32 @@ void set_time_config(uint16_t hour, uint16_t minute, bool use_ntp, int16_t offse
 
   if(!use_ntp)
   {
+    long unixts = time(&now);
+    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
+    struct timeval tv;
     char strftime_buf[64];
     struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-    ESP_LOGI(TAG, "The time before setting it: %s", strftime_buf);
     
-    struct timeval tv;
-    //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
-    tv.tv_sec = 1633644000+3600*hour+60*minute;
+    tv.tv_sec = 0;
+    ESP_LOGI(TAG, "Setting tv_sec to: %ld", tv.tv_sec);
     settimeofday(&tv, NULL);
-
+    unixts = time(&now);
+    ESP_LOGI(TAG, "unix timestamp zero: %ld", unixts);
+    //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
+    //subtract unix timestamp offset at time zero
+    tv.tv_sec = 1633644000+3600*hour+60*minute - unixts;
+    ESP_LOGI(TAG, "Setting tv_sec to: %ld", tv.tv_sec);
+    settimeofday(&tv, NULL);
+    unixts = time(&now);
+    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
+    
     time(&now);
     localtime_r(&now, &timeinfo);
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
     ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
+    unixts = time(&now);
+    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
+    
   }
 }
 
@@ -194,11 +207,18 @@ void cb_received_config(void *pvParameter){
   if(current_config->color_changed)
   {
     ESP_LOGI(TAG, "got new colors: %d, %d, %d, %d", current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
-    my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours, current_config->brightness, current_config->saturation);
+    my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
     //reset boolean to false
     current_config->color_changed = false;
   }
-  
+  if(current_config->brightness_changed)
+  {
+    my_display.setze_helligkeit(current_config->brightness);
+  }
+  if(current_config->saturation_changed)
+  {
+    my_display.setze_saettigung(current_config->saturation);
+  }
 }
 
 void cb_display_off(void *pvParameter){
@@ -417,8 +437,10 @@ void app_main() {
   //xTaskCreatePinnedToCore(&blinkLeds_simple, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&fastfade, "blinkLeds", 4000, NULL, 5, NULL, 0);
   //xTaskCreatePinnedToCore(&blinkWithFx_allpatterns, "blinkLeds", 4000, NULL, 5, NULL, 0);
-  my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours, current_config->brightness, current_config->saturation);
-
+  my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
+  my_display.setze_helligkeit(current_config->brightness);
+  my_display.setze_saettigung(current_config->saturation);
+  
   
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);
   xTaskCreatePinnedToCore(&start_loop_display, "start loop display", 4000, NULL, ( 1UL | portPRIVILEGE_BIT ), NULL, 0);
