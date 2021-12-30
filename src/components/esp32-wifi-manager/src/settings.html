@@ -334,27 +334,55 @@
         </div>
 	</div>
 
-		<div class="button-container">
+	<div class="button-container">
 
-			<button type="submit">Save</button>
-	
-		</div>
+		<button type="submit">Speichern</button>
 
 	</div>
 
 	
 
-
-
-	
-
-		
-
       </form>
+
+		<h3 style="text-align: left;">Wifi Connect</h3>
+  
+		<form name="wifi" method="post" action="/wifi">
+
+			<div id=connect_manual>
+				<div class="field-group">
+				  <label>SSID</label>
+				  <input id="ssid" type="text" size="20">
+				</div>
+				<div class="field-group">
+					<label>Passwort</label>
+					<input id="pwd" type="password" size="20">
+				  </div>
+			</div>
+			<div class="buttons">
+				<input id="join" type="button" value="Verbinden"/>
+			</div>
+		</form>
 
     </div>
 
     <script>
+
+function performConnect() {
+
+   let selectedSSID = document.getElementById("ssid").value;
+   let pwd = document.getElementById("pwd").value;
+
+   fetch("connect.json", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Custom-ssid": selectedSSID,
+      "X-Custom-pwd": pwd,
+    },
+    body: { timestamp: Date.now() },
+  });
+
+}
 
 	function initcollapsibles()
 
@@ -391,6 +419,22 @@
 
 	{
 		initcollapsibles();
+
+		document.getElementById("manual_join").addEventListener(
+			"click",
+			(e) => {
+			performConnect();
+			},
+			false
+		);
+
+		document.getElementById("join").addEventListener(
+			"click",
+			(e) => {
+			performConnect();
+			},
+			false
+		);
 
 				
 
@@ -908,6 +952,11 @@
 
       };
 
+	  $('form').on('submit', function(e) {
+
+		performConnect();
+
+		});
       
       $('form').on('submit', function(e) {
 
