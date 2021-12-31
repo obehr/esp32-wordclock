@@ -756,7 +756,7 @@ class Display {
       init_letters(VARIANT_CLOCKFACE);
 
       ESP_LOGI(TAG2, "adding leds");
-      FastLED.addLeds<LED_TYPE, DATA_PIN>(matrix, 64);
+      FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(matrix, 64);
       
       #ifdef STRIP_DATA_PIN
       FastLED.addLeds<LED_TYPE, STRIP_DATA_PIN, RGB>(ledsRGB, getRGBWsize(33));

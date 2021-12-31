@@ -199,48 +199,55 @@
   </head>
 
   <body>
+	
 
     <div class="container">
+		<form name="top_settings">
+			<p>
+				<input type="radio" name="top_section" value="0" onchange="init_top_sections();" checked>Allgemeine Einstellungen
+		
+				<input type="radio" name="top_section" value="1" onchange="init_top_sections();">WLAN Verbindung einrichten
+			</p>
+		</form>
+		<div id=general_settings>
 
-      <h3 style="text-align: left;">General Settings</h3>
+      <h3 style="text-align: left;">Allgemeine Einstellungen</h3>
 
 	  
 
       <form name="settings" method="post" action="/settings">
-
+		<div>
+			<input type="checkbox" name="set_time" value="1" onchange="init_sections();">
+			<label for="set_time">Zeit einstellen</label>
+		</div>
+		<div id=time_setup>
 		<p>
+	    <input type="radio" name="section" value="0" onchange="init_sub_sections();" checked>Netzwerkzeit
 
-	    <input type="radio" name="section" value="0" onchange="initcollapsibles();">Network Time Setup
-
-		<input type="radio" name="section" value="1" onchange="initcollapsibles();">Manual Time Setup
-
-		<input type="radio" name="section" value="2" checked onchange="initcollapsibles();">Color Settings
-
-		<input type="radio" name="section" value="3" onchange="initcollapsibles();">Brightness Setting
-
-		<input type="radio" name="section" value="4" onchange="initcollapsibles();">Saturation Setting
+		<input type="radio" name="section" value="1" onchange="init_sub_sections();">Manuelle Eingabe
 		</p>
+
 
 		<div id=manualtime>
 			<div class="field-group">
-			  <label>Tag</label>
-			  <input name="day" type="text" size="2">
+				<label>Jahr</label>
+				<input name="year" type="text" size="2">
 			</div>
 			<div class="field-group">
 			  <label>Monat</label>
 			  <input name="month" type="text" size="2">
 			</div>
 			<div class="field-group">
-				<label>Jahr</label>
-				<input name="year" type="text" size="2">
-			</div>
-			<div class="field-group">
-				<label>Minute</label>
-				<input name="minute" type="text" size="2">
+				<label>Tag</label>
+				<input name="day" type="text" size="2">
 			</div>
 			<div class="field-group">
 				<label>Stunde</label>
 				<input name="hour" type="text" size="2">
+			</div>
+			<div class="field-group">
+				<label>Minute</label>
+				<input name="minute" type="text" size="2">
 			</div>
 		</div>
 
@@ -254,15 +261,20 @@
 				<input name="timeOffset" type="text" size="2">
 			</div>
 		</div>
-
-		
+		<hr>
+	</div>
+	
+	<div>
+		<input type="checkbox" name="set_colors" value="1" onchange="init_sections();">
+		<label for="set_time">Farben einstellen</label>
+	</div>
 		<div id="colorsettings">
 			<canvas width="400" height="400" id="myCanvas"></canvas>
 			<div class="field-group">
 			<table>
 				<tr>
 					<td style="width: 100px">
-						<p><label>Color 1</label></p>
+						<p><label>ITS +<br>OCLOCK</label></p>
 						  <select name="c1" id="inputColor0">
 							  <option value="0" selected>Red</option>
 							  <option value="32">Orange</option>
@@ -276,7 +288,7 @@
 					</td>
 
 					<td style="width: 100px">
-					  <p><label>Color 2</label></p>
+					  <p><label>FIVE, TEN,<br>..., HALF</label></p>
 					  <select name="c2" id="inputColor1">
 						  <option value="0">Red</option>
 						  <option value="32" selected>Orange</option>
@@ -290,7 +302,7 @@
 					</td>
 
 					<td style="width: 100px">
-						<p><label>Color 3</label></p>
+						<p><label>TO +<br>PAST</label></p>
 					  <select name="c3" id="inputColor2">
 						  <option value="0">Red</option>
 						  <option value="32">Orange</option>
@@ -303,7 +315,7 @@
 					  </select>
 
 					<td style="width: 100px">
-						<p><label>Color 4</label></p>
+						<p><label>ONE, TWO,<br>..., TWELVE</label></p>
 					  <select name="c4" id="inputColor3">
 						  <option value="0">Red</option>
 						  <option value="32">Orange</option>
@@ -319,19 +331,29 @@
 				</tr>
 			</table>
         </div>
+		<hr>
 	</div>
 		
+	<div>
+		<input type="checkbox" name="set_saturation" value="1" onchange="init_sections();">
+		<label for="set_time">S&auml;ttigung einstellen</label>
+	</div>
 	<div id="saturationsetting">
 		<div class="field-group">
-			<p><label>Saturation</label></p>
 			<input type="range" id="sat" name="sat" min="0" max="255">
 		</div>
+		<hr>
+	</div>
+
+	<div>
+		<input type="checkbox" name="set_brightness" value="1" onchange="init_sections();">
+		<label for="set_time">Helligkeit einstellen</label>
 	</div>
 	<div id="brightnesssetting">
 		<div class="field-group">
-			<p><label>Brightness</label></p>
 			<input type="range" id="bri" name="bri" min="0" max="255">
         </div>
+		<hr>
 	</div>
 
 	<div class="button-container">
@@ -343,8 +365,9 @@
 	
 
       </form>
-
-		<h3 style="text-align: left;">Wifi Connect</h3>
+	</div>
+	<div id="wifi_settings">
+		<h3 style="text-align: left;">WLAN Verbindung einrichten</h3>
   
 		<form name="wifi" method="post" action="/wifi">
 
@@ -362,6 +385,8 @@
 				<input id="join" type="button" value="Verbinden"/>
 			</div>
 		</form>
+	</div>
+
 
     </div>
 
@@ -384,7 +409,49 @@ function performConnect() {
 
 }
 
-	function initcollapsibles()
+
+function init_top_sections()
+
+{
+	if(document.top_settings.top_section.value == 0)
+	{ document.getElementById("general_settings").style.display = "block"; }
+	else
+	{ document.getElementById("general_settings").style.display = "none"; }
+
+	if(document.top_settings.top_section.value == 1)
+	{ document.getElementById("wifi_settings").style.display = "block"; }
+	else
+	{ document.getElementById("wifi_settings").style.display = "none"; }
+
+}
+
+
+function init_sections()
+
+{
+	if(document.settings.set_time.checked)
+	{ document.getElementById("time_setup").style.display = "block"; }
+	else
+	{ document.getElementById("time_setup").style.display = "none"; }
+
+	if(document.settings.set_colors.checked)
+	{ document.getElementById("colorsettings").style.display = "block"; }
+	else
+	{ document.getElementById("colorsettings").style.display = "none"; }
+
+	if(document.settings.set_brightness.checked)
+	{ document.getElementById("brightnesssetting").style.display = "block"; }
+	else
+	{ document.getElementById("brightnesssetting").style.display = "none"; }
+
+	if(document.settings.set_saturation.checked)
+	{ document.getElementById("saturationsetting").style.display = "block"; }
+	else
+	{ document.getElementById("saturationsetting").style.display = "none"; }
+
+}
+
+	function init_sub_sections()
 
 	{
 		if(document.settings.section.value == 0)
@@ -396,37 +463,15 @@ function performConnect() {
 		{ document.getElementById("manualtime").style.display = "block"; }
 		else
 		{ document.getElementById("manualtime").style.display = "none"; }
-		
-		if(document.settings.section.value == 2)
-		{ document.getElementById("colorsettings").style.display = "block"; }
-		else
-		{ document.getElementById("colorsettings").style.display = "none"; }
-
-		if(document.settings.section.value == 3)
-		{ document.getElementById("brightnesssetting").style.display = "block"; }
-		else
-		{ document.getElementById("brightnesssetting").style.display = "none"; }
-
-		if(document.settings.section.value == 4)
-		{ document.getElementById("saturationsetting").style.display = "block"; }
-		else
-		{ document.getElementById("saturationsetting").style.display = "none"; }
-
 	}
 	
 
 	$(document).ready(function() 
 
 	{
-		initcollapsibles();
-
-		document.getElementById("manual_join").addEventListener(
-			"click",
-			(e) => {
-			performConnect();
-			},
-			false
-		);
+		init_top_sections();
+		init_sections();
+		init_sub_sections();
 
 		document.getElementById("join").addEventListener(
 			"click",
