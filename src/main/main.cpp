@@ -418,6 +418,7 @@ void app_main() {
   current_config = get_initial_config();
   set_time_config(current_config->hour ,current_config->minute, current_config->use_ntp, current_config->time_offset);
   
+  wifi_manager_init();
 /* start the wifi manager */
 	wifi_manager_start();
 	/* register a callback as an example to how you can integrate your code with the wifi manager */
