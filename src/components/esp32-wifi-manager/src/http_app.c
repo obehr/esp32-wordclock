@@ -73,7 +73,6 @@ static char* http_set_strip_on_url = NULL;
 static char* http_settings_url = NULL;
 static char* http_settings_page_url = NULL;
 static char* http_min_url = NULL;
-static char* http_validate_url = NULL;
 
 /**
  * @brief embedded binary data.
@@ -90,8 +89,6 @@ extern const uint8_t settings_html_start[] asm("_binary_settings_html_start");
 extern const uint8_t settings_html_end[] asm("_binary_settings_html_end");
 extern const uint8_t min_js_start[] asm("_binary_jquery_min_js_start");
 extern const uint8_t min_js_end[] asm("_binary_jquery_min_js_end");
-extern const uint8_t validate_js_start[] asm("_binary_jquery_validate_min_js_start");
-extern const uint8_t validate_js_end[] asm("_binary_jquery_validate_min_js_end");
 
 /* const httpd related values stored in ROM */
 const static char http_200_hdr[] = "200 OK";
@@ -365,12 +362,6 @@ static esp_err_t http_server_get_handler(httpd_req_t *req){
 			httpd_resp_set_type(req, http_content_type_js);
 			httpd_resp_send(req, (char*)min_js_start, min_js_end - min_js_start);
 		}
-		/* GET /jquery.validate.min.js */
-		else if(strcmp(req->uri, http_validate_url) == 0){
-			httpd_resp_set_status(req, http_200_hdr);
-			httpd_resp_set_type(req, http_content_type_js);
-			httpd_resp_send(req, (char*)validate_js_start, validate_js_end - validate_js_start);
-		}
 		/* GET /settings.html */
 		else if(strcmp(req->uri, http_settings_page_url) == 0){
 			httpd_resp_set_status(req, http_200_hdr);
@@ -538,10 +529,6 @@ void http_app_stop(){
 			free(http_min_url);
 			http_min_url = NULL;
 		}
-		if(http_validate_url){
-			free(http_validate_url);
-			http_validate_url = NULL;
-		}
 		/* stop server */
 		httpd_stop(httpd_handle);
 		httpd_handle = NULL;
@@ -598,7 +585,6 @@ void http_app_start(bool lru_purge_enable){
 			const char page_settings[] = "settings.json";
 			const char page_settings_page[] = "settings.html";
 			const char page_min[] = "jquery.min.js";
-			const char page_validate[] = "jquery.validate.min.js";
 			/* root url, eg "/"   */
 			const size_t http_root_url_sz = sizeof(char) * (root_len+1);
 			http_root_url = malloc(http_root_url_sz);
@@ -631,7 +617,6 @@ void http_app_start(bool lru_purge_enable){
 			http_settings_url = http_app_generate_url(page_settings);
 			http_settings_page_url = http_app_generate_url(page_settings_page);
 			http_min_url = http_app_generate_url(page_min);
-			http_validate_url = http_app_generate_url(page_validate);
 		}
 
 		err = httpd_start(&httpd_handle, &config);

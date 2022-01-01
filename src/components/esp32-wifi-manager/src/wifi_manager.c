@@ -191,6 +191,9 @@ const int WIFI_MANAGER_CONNECT_IN_PROGRESS = BIT9;
 /* @brief When set, means a deferred connect has been requested */
 const int WIFI_MANAGER_REQUEST_DEFERRED_CONNECT = BIT10;
 
+/* @brief When set, means switch STA was requested */
+const int WIFI_MANAGER_REQUEST_CHANGE_STA = BIT11;
+
 
 /* Prototypes */
 static void wifi_manager_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -873,11 +876,24 @@ static void wifi_manager_event_handler(void* arg, esp_event_base_t event_base, i
 			wifi_event_sta_disconnected_t* wifi_event_sta_disconnected = (wifi_event_sta_disconnected_t*)malloc(sizeof(wifi_event_sta_disconnected_t));
 			*wifi_event_sta_disconnected =  *( (wifi_event_sta_disconnected_t*)event_data );
 
+			
 			/* if a DISCONNECT message is posted while a scan is in progress this scan will NEVER end, causing scan to never work again. For this reason SCAN_BIT is cleared too */
 			xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_WIFI_CONNECTED_BIT | WIFI_MANAGER_SCAN_BIT);
 
-			/* post disconnect event with reason code */
-			wifi_manager_send_message(WM_EVENT_STA_DISCONNECTED, (void*)wifi_event_sta_disconnected );
+			/* added custom behavior here */
+			EventBits_t uxBits;
+			uxBits = xEventGroupGetBits(wifi_manager_event_group);
+			if(uxBits & WIFI_MANAGER_REQUEST_CHANGE_STA)
+			{
+				ESP_LOGI(TAG, "Reason for disconnect was change STA request");
+				xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_REQUEST_DISCONNECT_BIT);
+				xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_REQUEST_CHANGE_STA);
+			}
+			else
+			{
+				/* post disconnect event with reason code */
+				wifi_manager_send_message(WM_EVENT_STA_DISCONNECTED, (void*)wifi_event_sta_disconnected );
+			}
 			break;
 
 		/* This event arises when the AP to which the station is connected changes its authentication mode, e.g., from no auth
@@ -1382,7 +1398,7 @@ void wifi_manager( void * pvParameters ){
 			case WM_ORDER_CONNECT_STA:
 				ESP_LOGI(TAG, "MESSAGE: ORDER_CONNECT_STA");
 
-				bool skip_request = false;
+				bool skip_request = false; 
 				/* very important: precise that this connection attempt is specifically requested.
 				 * Param in that case is a boolean indicating if the request was made automatically
 				 * by the wifi_manager.
@@ -1393,16 +1409,19 @@ void wifi_manager( void * pvParameters ){
 					if((BaseType_t)msg.param == CONNECTION_REQUEST_USER) {
 						/* Ensure WIFI_MANAGER_DONT_SAVE_CONNECTION_INFO_BIT is cleared so that configuration is
 						 * saved if the user connection attempt is successful. */
+						ESP_LOGI(TAG, "1");
 						xEventGroupClearBits(wifi_manager_event_group, WIFI_MANAGER_DONT_SAVE_CONNECTION_INFO_BIT);
 					}
 					else {
 						/* Ensure WIFI_MANAGER_DONT_SAVE_CONNECTION_INFO_BIT is set so that configuration is
 						 * not saved if the user connection attempt is successful. */
+						ESP_LOGI(TAG, "2");
 						xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_DONT_SAVE_CONNECTION_INFO_BIT);
 					}
 					if( ! (xEventGroupGetBits(wifi_manager_event_group) & WIFI_MANAGER_CONNECT_IN_PROGRESS) ){
 						/* Copy saved SSID/password and into the STA config.
 						 * This is only safe to do if there isn't a connection is progress. */
+						ESP_LOGI(TAG, "3");
 						wifi_config_t *config = wifi_manager_get_wifi_sta_config();
 						memset(config, 0x00, sizeof(wifi_config_t));
 						memcpy(config->sta.ssid, connect_request_ssid, MAX_SSID_SIZE);
@@ -1411,6 +1430,7 @@ void wifi_manager( void * pvParameters ){
 				}
 				else if((BaseType_t)msg.param == CONNECTION_REQUEST_RESTORE_CONNECTION) {
 					if( ! (xEventGroupGetBits(wifi_manager_event_group) & WIFI_MANAGER_CONNECT_IN_PROGRESS) ){
+						ESP_LOGI(TAG, "4");
 						xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_DONT_SAVE_CONNECTION_INFO_BIT);
 					}
 					else {
@@ -1418,6 +1438,7 @@ void wifi_manager( void * pvParameters ){
 						 * in progress, just skip the restore attempt - the only time this happens
 						 * is if the user is trying to connect to a new wifi AP. In that case
 						 * we want to stop trying to restore a connection to the old one. */
+						ESP_LOGI(TAG, "5");
 						skip_request = true;
 					}
 				}
@@ -1425,37 +1446,64 @@ void wifi_manager( void * pvParameters ){
 					if( xEventGroupGetBits(wifi_manager_event_group) & WIFI_MANAGER_CONNECT_IN_PROGRESS ){
 						/* Attempting to restore a connection while another connection attempt is
 						 * in progress, just skip the restore attempt. */
+						ESP_LOGI(TAG, "6");
 						skip_request = true;
 					}
 				}
 
 				if (skip_request) {
+					ESP_LOGI(TAG, "7");
 					ESP_LOGI(TAG, "Connection request skipped");
 				}
+				ESP_LOGI(TAG, "8");
+				//custom behavior
+				uxBits = xEventGroupGetBits(wifi_manager_event_group);
+				if((BaseType_t)msg.param == CONNECTION_REQUEST_USER && ! (uxBits & WIFI_MANAGER_CONNECT_IN_PROGRESS) && (uxBits & WIFI_MANAGER_WIFI_CONNECTED_BIT))
+				{
+					xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_REQUEST_CHANGE_STA);
+					ESP_LOGI(TAG, "Order disconnect for change STA");
 
+					/* precise this is coming from a user request */
+					xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_REQUEST_DISCONNECT_BIT);
+
+					/* order wifi discconect */
+					ESP_ERROR_CHECK(esp_wifi_disconnect());
+					vTaskDelay(pdMS_TO_TICKS(500));
+					uxBits = xEventGroupGetBits(wifi_manager_event_group);
+					while(uxBits & WIFI_MANAGER_WIFI_CONNECTED_BIT)
+					{
+						ESP_LOGI(TAG, "Waiting for disconnect");
+						vTaskDelay(pdMS_TO_TICKS(500));
+						uxBits = xEventGroupGetBits(wifi_manager_event_group);
+					}
+				}
 				uxBits = xEventGroupGetBits(wifi_manager_event_group);
 				if( ! skip_request && ! (uxBits & WIFI_MANAGER_WIFI_CONNECTED_BIT) ){
 					/* update config to latest and attempt connection */
+					ESP_LOGI(TAG, "9");
 					ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, wifi_manager_get_wifi_sta_config()));
 
 					/* if there is a wifi scan in progress abort it first
 					   Calling esp_wifi_scan_stop will trigger a SCAN_DONE event which will reset this bit */
 					if(uxBits & WIFI_MANAGER_SCAN_BIT){
+						ESP_LOGI(TAG, "10");
 						esp_wifi_scan_stop();
 					}
 					/* if there is an existing connection attempt in progress,
 					 * defer the call to esp_wifi_connect(), otherwise a crash
 					 * will happen. */
 					if(uxBits & WIFI_MANAGER_CONNECT_IN_PROGRESS){
+						ESP_LOGI(TAG, "11");
 						ESP_LOGI(TAG, "Connect in progress, deferring call to esp_wifi_connect()");
 						xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_REQUEST_DEFERRED_CONNECT);
 					}
 					else{
+						ESP_LOGI(TAG, "12");
 						ESP_ERROR_CHECK(esp_wifi_connect());
 						xEventGroupSetBits(wifi_manager_event_group, WIFI_MANAGER_CONNECT_IN_PROGRESS);
 					}
 				}
-
+				ESP_LOGI(TAG, "13");
 				/* callback */
 				if(cb_ptr_arr[msg.code]) (*cb_ptr_arr[msg.code])(NULL);
 

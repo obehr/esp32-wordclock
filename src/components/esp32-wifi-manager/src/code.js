@@ -39,11 +39,12 @@ function stopRefreshAPInterval() {
 }
 
 function startCheckStatusInterval() {
-  checkStatusInterval = setInterval(checkStatus, 950);
+  setTimeout(checkStatus, 950);
+  setTimeout(checkStatus, 1900);
 }
 
 function startRefreshAPInterval() {
-  refreshAPInterval = setInterval(refreshAP, 3800);
+  setTimeout(refreshAP, 3800);
 }
 
 docReady(async function () {
@@ -185,7 +186,7 @@ docReady(async function () {
   );
 
   gel("yes-disconnect").addEventListener("click", async () => {
-    stopCheckStatusInterval();
+    //stopCheckStatusInterval();
     selectedSSID = "";
 
     document.getElementById("diag-disconnect").style.display = "none";
@@ -215,10 +216,10 @@ async function performConnect(conntype) {
   //stop the status refresh. This prevents a race condition where a status
   //request would be refreshed with wrong ip info from a previous connection
   //and the request would automatically shows as succesful.
-  stopCheckStatusInterval();
+  //stopCheckStatusInterval();
 
   //stop refreshing wifi list
-  stopRefreshAPInterval();
+  //stopRefreshAPInterval();
 
   var pwd;
   if (conntype == "manual") {
