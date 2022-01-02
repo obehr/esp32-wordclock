@@ -132,7 +132,7 @@ void set_ntp_server()
   sntp_init();
 }
 
-void deactivate_ntp_server()
+void deactivate_ntp()
 {
   ESP_LOGI(TAG, "Deactivate NTP");
   sntp_setservername(0, "localhost");
@@ -156,34 +156,17 @@ void get_tm_from_config()
   else
   { manual_time.tm_mday = 0; }
 
-  if(current_config->hour >= 0 && current_config->hour < 24)
+  if(current_config->hour < 24)
   { manual_time.tm_hour=current_config->hour; }
   else
   { manual_time.tm_hour = 0; }
 
-  if(current_config->minute >= 0 && current_config->minute < 60)
+  if(current_config->minute < 60)
   { manual_time.tm_min = current_config->minute; }
   else
   { manual_time.tm_min = 0; }
 }
 
-void set_time_config(bool use_ntp, int16_t offset)
-{
-  ESP_LOGI(TAG, "Set time config. Use NTP %d, Time Offset %d ...", use_ntp, offset);
-  ESP_LOGI(TAG, "... manual date and time: %s-%s-%s %s:%s", manual_time.tm_year, manual_time.tm_mon, manual_time.tm_mday, manual_time.tm_hour, manual_time.tm_min);
-  
-  set_timezone_offset(offset);
-
-  if(use_ntp)
-  {
-    set_ntp_server(use_ntp);
-  }
-  else
-  { 
-    deactivate_ntp();
-    set_manual_time(); 
-  }
-}
 
 void set_manual_time()
 {
@@ -214,7 +197,7 @@ void set_manual_time()
   if(manual_timestamp < unixts_zero)
   {
     ESP_LOGI(TAG, "Error: timestamp offset at tv_sec = 0 is bigger than target timestamp");
-    return
+    return;
   }
 
   tv.tv_sec = manual_timestamp - unixts_zero;
@@ -229,6 +212,25 @@ void set_manual_time()
   strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
   ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
 }
+
+void set_time_config(bool use_ntp, int16_t offset)
+{
+  ESP_LOGI(TAG, "Set time config. Use NTP %d, Time Offset %d ...", use_ntp, offset);
+  ESP_LOGI(TAG, "... manual date and time: %d-%d-%d %d:%d", manual_time.tm_year, manual_time.tm_mon, manual_time.tm_mday, manual_time.tm_hour, manual_time.tm_min);
+  
+  set_timezone_offset(offset);
+
+  if(use_ntp)
+  {
+    set_ntp_server();
+  }
+  else
+  { 
+    deactivate_ntp();
+    set_manual_time(); 
+  }
+}
+
 
 void cb_received_config(void *pvParameter){
   ESP_LOGI(TAG, "callback received_config");
