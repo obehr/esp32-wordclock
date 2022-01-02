@@ -75,7 +75,7 @@ static void init_config()
 
   esp_err_t err;
   nvs_handle_t my_handle;
-  err = nvs_open("storage", NVS_READ, &my_handle);
+  err = nvs_open("storage", NVS_READONLY, &my_handle);
   if (err != ESP_OK) {
     ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
   } else {
@@ -155,7 +155,7 @@ static bool get_stripe_status()
   uint8_t int_status;
   esp_err_t err;
   nvs_handle_t my_handle;
-  err = nvs_open("storage", NVS_READ, &my_handle);
+  err = nvs_open("storage", NVS_READONLY, &my_handle);
   if (err != ESP_OK) {
     ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
   } else {
@@ -169,14 +169,14 @@ static bool get_stripe_status()
   return status;
 }
 
-static bool get_stripe_status()
+static bool get_display_status()
 {
   ESP_LOGI(TAG3, "Get display status");
   bool status = false;
   uint8_t int_status;
   esp_err_t err;
   nvs_handle_t my_handle;
-  err = nvs_open("storage", NVS_READ, &my_handle);
+  err = nvs_open("storage", NVS_READONLY, &my_handle);
   if (err != ESP_OK) {
     ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
   } else {
