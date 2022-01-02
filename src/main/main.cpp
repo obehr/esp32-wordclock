@@ -60,6 +60,7 @@ Display my_display{};
 my_config* current_config;
 //ESP_LOGI(TAG, "created display");
 bool display = false;
+struct tm manual_time;
 
 extern "C" {
   void app_main();
@@ -102,82 +103,131 @@ void time_sync_notification_cb(struct timeval *tv)
 
 void set_timezone_offset(int16_t offset)
 {
-  setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
-  tzset();
-  /*
   switch(offset) {
-    case -4: setenv("TZ", "UTC-4", 1); tzset(); break;
-    case -3: setenv("TZ", "UTC-3", 1); tzset(); break;
-    case -2: setenv("TZ", "UTC-2", 1); tzset(); break;
-    case -1: setenv("TZ", "UTC-1", 1); tzset(); break;
-    case 0: setenv("TZ", "UTC0", 1); tzset(); break;
-    case 1: setenv("TZ", "UTC1", 1); tzset(); break;
-    case 2: setenv("TZ", "UTC2", 1); tzset(); break;
-    case 3: setenv("TZ", "UTC3", 1); tzset(); break;
-    case 4: setenv("TZ", "UTC4", 1); tzset(); break;
+    case 0: setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1); tzset(); break;
+    case 1: setenv("TZ", "UTC+3", 1); tzset(); break;
+    case 2: setenv("TZ", "UTC+2", 1); tzset(); break;
+    case 3: setenv("TZ", "UTC+1", 1); tzset(); break;
+    case 4: setenv("TZ", "UTC0", 1); tzset(); break;
+    case 5: setenv("TZ", "UTC-1", 1); tzset(); break;
+    case 6: setenv("TZ", "UTC-2", 1); tzset(); break;
+    case 7: setenv("TZ", "UTC-3", 1); tzset(); break;
     default: ESP_LOGI(TAG, "unhandled offset"); break;
-  }*/
+  }
 }
 
-void set_ntp_server(bool use_ntp)
+void set_ntp_server()
 {
-  if(use_ntp)
+  ESP_LOGI(TAG, "Activate NTP");
+  if(!ntp_initialized)
   {
-    ESP_LOGI(TAG, "Activate NTP");
-    if(!ntp_initialized)
-    {
-      ESP_LOGI(TAG, "Initializing SNTP");
-      sntp_setoperatingmode(SNTP_OPMODE_POLL);
-      sntp_set_time_sync_notification_cb(time_sync_notification_cb);
-      ntp_initialized = true;
-    }
-    sntp_setservername(0, "fritz.box");
-    sntp_setservername(1, "de.pool.ntp.org");
-
-    sntp_init();
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    ntp_initialized = true;
   }
+  sntp_setservername(0, "fritz.box");
+  sntp_setservername(1, "de.pool.ntp.org");
+
+  sntp_init();
+}
+
+void deactivate_ntp_server()
+{
+  ESP_LOGI(TAG, "Deactivate NTP");
+  sntp_setservername(0, "localhost");
+}
+
+
+void get_tm_from_config()
+{
+  if(current_config->year > 1900 && current_config->year < 2038)
+  { manual_time.tm_year=current_config->year-1900; }
   else
-  {
-    ESP_LOGI(TAG, "Deactivate NTP");
-    sntp_setservername(0, "localhost");
-  }
+  { manual_time.tm_year = 0; }
+
+  if(current_config->month > 0 && current_config->month < 13)
+  { manual_time.tm_mon=current_config->month-1; }
+  else
+  { manual_time.tm_mon = 0; }
+
+  if(current_config->day > 0 && current_config->day < 32)
+  { manual_time.tm_mday=current_config->day; }
+  else
+  { manual_time.tm_mday = 0; }
+
+  if(current_config->hour >= 0 && current_config->hour < 24)
+  { manual_time.tm_hour=current_config->hour; }
+  else
+  { manual_time.tm_hour = 0; }
+
+  if(current_config->minute >= 0 && current_config->minute < 60)
+  { manual_time.tm_min = current_config->minute; }
+  else
+  { manual_time.tm_min = 0; }
 }
 
-void set_time_config(uint16_t hour, uint16_t minute, bool use_ntp, int16_t offset)
+void set_time_config(bool use_ntp, int16_t offset)
 {
-  ESP_LOGI(TAG, "got new time config: %d, %d, %d, %d", hour ,minute, use_ntp, offset);
-  set_ntp_server(use_ntp);
+  ESP_LOGI(TAG, "Set time config. Use NTP %d, Time Offset %d ...", use_ntp, offset);
+  ESP_LOGI(TAG, "... manual date and time: %s-%s-%s %s:%s", manual_time.tm_year, manual_time.tm_mon, manual_time.tm_mday, manual_time.tm_hour, manual_time.tm_min);
+  
   set_timezone_offset(offset);
 
-  if(!use_ntp)
+  if(use_ntp)
   {
-    long unixts = time(&now);
-    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
-    struct timeval tv;
-    char strftime_buf[64];
-    struct tm timeinfo;
-    
-    tv.tv_sec = 0;
-    ESP_LOGI(TAG, "Setting tv_sec to: %ld", tv.tv_sec);
-    settimeofday(&tv, NULL);
-    unixts = time(&now);
-    ESP_LOGI(TAG, "unix timestamp zero: %ld", unixts);
-    //add hours in seconds and minutes in seconds to midnight of Octover 8th 2021
-    //subtract unix timestamp offset at time zero
-    tv.tv_sec = 1633644000+3600*hour+60*minute - unixts;
-    ESP_LOGI(TAG, "Setting tv_sec to: %ld", tv.tv_sec);
-    settimeofday(&tv, NULL);
-    unixts = time(&now);
-    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
-    
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-    ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
-    unixts = time(&now);
-    ESP_LOGI(TAG, "unix timestamp: %ld", unixts);
-    
+    set_ntp_server(use_ntp);
   }
+  else
+  { 
+    deactivate_ntp();
+    set_manual_time(); 
+  }
+}
+
+void set_manual_time()
+{
+  long manual_timestamp = mktime(&manual_time);
+  if(manual_timestamp == -1)
+  {
+    ESP_LOGI(TAG, "Convert date/time to unix timestamp failed");
+    return;
+  }
+  else
+  { ESP_LOGI(TAG, "Date/time converted to unix timestamp: %ld", manual_timestamp); }
+  
+  //strftime
+  char strftime_buf[64];
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &manual_time);
+
+  long unixts = time(&now);
+  ESP_LOGI(TAG, "Unix timestamp before update: %ld", unixts);
+  
+  struct timeval tv;
+  
+  tv.tv_sec = 0;
+  ESP_LOGI(TAG, "Setting timeofday to tv_sec = 0");
+  settimeofday(&tv, NULL);
+  long unixts_zero = time(&now);
+  ESP_LOGI(TAG, "Unix timestamp at tv_sec = 0 is: %ld", unixts_zero);
+  
+  if(manual_timestamp < unixts_zero)
+  {
+    ESP_LOGI(TAG, "Error: timestamp offset at tv_sec = 0 is bigger than target timestamp");
+    return
+  }
+
+  tv.tv_sec = manual_timestamp - unixts_zero;
+  ESP_LOGI(TAG, "Setting tv_sec to manual unix timestamp minus unix timestamp at tv_sec = 0: %ld", tv.tv_sec);
+  settimeofday(&tv, NULL);
+  unixts = time(&now);
+  ESP_LOGI(TAG, "Verify unix timestamp after setting: %ld", unixts);
+  
+  struct tm timeinfo;
+  time(&now);
+  localtime_r(&now, &timeinfo);
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  ESP_LOGI(TAG, "The time after setting it: %s", strftime_buf);
 }
 
 void cb_received_config(void *pvParameter){
@@ -193,13 +243,11 @@ void cb_received_config(void *pvParameter){
   }
   //reset boolean to false
   current_config->config_changed = false;
-  
-  int16_t current_hour = current_config->hour;
-  ESP_LOGI(TAG, "got hour from config %d", current_hour);
 
   if(current_config->time_changed)
   {
-    set_time_config(current_config->hour, current_config->minute, current_config->use_ntp, current_config->time_offset);
+    get_tm_from_config();    
+    set_time_config(current_config->use_ntp, current_config->time_offset);
     
     //reset boolean to false
     current_config->time_changed = false;
@@ -214,10 +262,12 @@ void cb_received_config(void *pvParameter){
   if(current_config->brightness_changed)
   {
     my_display.setze_helligkeit(current_config->brightness);
+    current_config->brightness_changed = false;
   }
   if(current_config->saturation_changed)
   {
     my_display.setze_saettigung(current_config->saturation);
+    current_config->saturation_changed = false;
   }
 }
 
@@ -416,7 +466,8 @@ void app_main() {
   }
   ESP_ERROR_CHECK( err );
   current_config = get_initial_config();
-  set_time_config(current_config->hour ,current_config->minute, current_config->use_ntp, current_config->time_offset);
+  get_tm_from_config();
+  set_time_config(current_config->use_ntp, current_config->time_offset);
   
   wifi_manager_init();
 /* start the wifi manager */

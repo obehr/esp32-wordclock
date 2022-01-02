@@ -14,7 +14,6 @@
 static const char TAG3[] = "config";
 
 typedef struct {
-  uint16_t section;
   bool use_ntp;
   uint16_t year;
   uint16_t month;
@@ -33,6 +32,10 @@ typedef struct {
   bool brightness_changed;
   bool saturation_changed;
   bool config_changed;
+  bool set_time;
+  bool set_colors;
+  bool set_brightness;
+  bool set_saturation;
 } my_config;
 
 static bool config_available = false;
@@ -48,6 +51,10 @@ static int32_t restart_counter = 0;
 static void init_config()
 {
   ESP_LOGI(TAG3, "Read config from nvs");
+  active_config.set_time = false;
+  active_config.set_colors = false;
+  active_config.set_brightness = false;
+  active_config.set_saturation = false;
   active_config.year = 0;
   active_config.month = 0;
   active_config.day = 0;
@@ -167,10 +174,10 @@ static void* get_config()
 
 static int16_t get_number(cJSON *json_object)
 {
-  if(strcmp(json_object->valuestring, "") != 0)
+  if(cJSON_IsString(json_object) && strcmp(json_object->valuestring, "") != 0)
   {
     int16_t casted_object = atoi(json_object->valuestring);
-    if(casted_object > 0)
+    if(casted_object >= 0)
     { 
       return casted_object;
     }
@@ -200,6 +207,7 @@ static void save_config(char *config_raw, size_t length)
   { init_config(); }
 
   cJSON *json = cJSON_ParseWithLength(config_raw, length);
+  cJSON *json_object;
   char *string = cJSON_Print(json);
   ESP_LOGI(TAG3, "parsed json %s", string);
   //cJSON *root = cJSON_Parse(content);
@@ -209,126 +217,124 @@ static void save_config(char *config_raw, size_t length)
   bool color_changed = false;
   bool brightness_changed = false;
   bool saturation_changed = false;
+  int16_t value_casted;
+  
+  bool set_time = cJSON_IsString(cJSON_GetObjectItemCaseSensitive(json, "set_time"));
+  ESP_LOGI(TAG3, "bool set_time %d", set_time);
+  bool set_colors = cJSON_IsString(cJSON_GetObjectItemCaseSensitive(json, "set_colors"));
+  ESP_LOGI(TAG3, "bool set_brightness %d", set_colors);
+  bool set_brightness = cJSON_IsString(cJSON_GetObjectItemCaseSensitive(json, "set_brightness"));
+  ESP_LOGI(TAG3, "bool set_brightness %d", set_brightness);
+  bool set_saturation = cJSON_IsString(cJSON_GetObjectItemCaseSensitive(json, "set_saturation"));
+  ESP_LOGI(TAG3, "bool set_saturation %d", set_saturation);
 
-
-  int16_t value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "section"));
-  if(value_casted != -1 && value_casted < 5)
+  if(set_time)
   {
-    ESP_LOGI(TAG3, "casted section value %d", value_casted);
-    active_config.section = value_casted;
-  }
-
-  if(active_config.section == 0) //network time setup
-  { 
-    ESP_LOGI(TAG3, "Process network time config");
-
-    if(!active_config.use_ntp)
+    json_object = cJSON_GetObjectItemCaseSensitive(json, "use_ntp");
+    if(cJSON_IsString(json_object))
     {
-      active_config.use_ntp = true;
-      time_changed = true;
+      bool use_ntp = strcmp(json_object->valuestring, "1") == 0;
+      ESP_LOGI(TAG3, "casted use_ntp value %d", use_ntp);
+      if(active_config.use_ntp != use_ntp)
+      {
+        ESP_LOGI(TAG3, "use_ntp value changed");
+        time_changed = true;
+        active_config.use_ntp = use_ntp;  
+      }
     }
 
-    if(strcmp(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring, "") != 0)
-    {
-      int16_t value_casted = atoi(cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
-      if(value_casted>-5 && value_casted<5 && value_casted != active_config.time_offset)
+    if(active_config.use_ntp) //network time setup
+    { 
+      ESP_LOGI(TAG3, "Process network time config");
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "time_offset"));
+      if(value_casted != -1 && value_casted < 7 && value_casted != active_config.time_offset)
       {
-        ESP_LOGI(TAG3, "casted timeOffset value %d", value_casted);
+        ESP_LOGI(TAG3, "casted time_offset value %d", value_casted);
         active_config.time_offset = value_casted;
         time_changed = true;
       }
-      else
+    }
+    else //manual time setup
+    {
+      ESP_LOGI(TAG3, "Process manual time config");
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "year"));
+      if(value_casted != -1 && value_casted > 2019 && value_casted < 2038 && value_casted != active_config.year)
       {
-        ESP_LOGI(TAG3, "unchanged time_offset value %s", cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
+        ESP_LOGI(TAG3, "casted year value %d", value_casted);
+        active_config.year = value_casted;
+        time_changed = true;
+      }
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "month"));
+      if(value_casted > 0 && value_casted < 13 && value_casted != active_config.month)
+      {
+        ESP_LOGI(TAG3, "casted month value %d", value_casted);
+        active_config.month = value_casted;
+        time_changed = true;
+      }
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "day"));
+      if(value_casted > 0 && value_casted < 32 && value_casted != active_config.day)
+      {
+        ESP_LOGI(TAG3, "casted day value %d", value_casted);
+        active_config.day = value_casted;
+        time_changed = true;
+      }
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "hour"));
+      if(value_casted != -1 && value_casted < 24 && value_casted != active_config.hour)
+      {
+        ESP_LOGI(TAG3, "casted hour value %d", value_casted);
+        active_config.hour = value_casted;
+        time_changed = true;
+      }
+
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "minute"));
+      if(value_casted != -1 && value_casted < 60 && value_casted != active_config.minute)
+      {
+        ESP_LOGI(TAG3, "casted minute value %d", value_casted);
+        active_config.minute = value_casted;
+        time_changed = true;
       }
     }
-    else
-    {
-      ESP_LOGI(TAG3, "unchanged time_offset value %s", cJSON_GetObjectItemCaseSensitive(json, "timeOffset")->valuestring);
-    }
   }
-  else if(active_config.section == 1) //manual time setup
-  {
-    ESP_LOGI(TAG3, "Process manual time config");
-    if(active_config.use_ntp)
-    {
-      active_config.use_ntp = false;
-      time_changed = true;
-    }
 
-    int16_t value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "year"));
-    if(value_casted != -1 && value_casted < 2100 && value_casted != active_config.year)
-    {
-      ESP_LOGI(TAG3, "casted year value %d", value_casted);
-      active_config.year = value_casted;
-      time_changed = true;
-    }
-
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "month"));
-    if(value_casted != -1 && value_casted < 13 && value_casted != active_config.month)
-    {
-      ESP_LOGI(TAG3, "casted month value %d", value_casted);
-      active_config.month = value_casted;
-      time_changed = true;
-    }
-
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "day"));
-    if(value_casted != -1 && value_casted < 32 && value_casted != active_config.day)
-    {
-      ESP_LOGI(TAG3, "casted day value %d", value_casted);
-      active_config.day = value_casted;
-      time_changed = true;
-    }
-
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "hour"));
-    if(value_casted != -1 && value_casted < 24 && value_casted != active_config.hour)
-    {
-      ESP_LOGI(TAG3, "casted hour value %d", value_casted);
-      active_config.hour = value_casted;
-      time_changed = true;
-    }
-
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "minute"));
-    if(value_casted != -1 && value_casted < 61 && value_casted != active_config.minute)
-    {
-      ESP_LOGI(TAG3, "casted minute value %d", value_casted);
-      active_config.minute = value_casted;
-      time_changed = true;
-    }
-  }
-  else if(active_config.section == 2) //color setup
+  if(set_colors) //color setup
   {
     ESP_LOGI(TAG3, "Process color config");
   
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c1"));
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "color_its_oclock"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_its_oclock)
     {
       active_config.color_its_oclock = value_casted;
       color_changed = true;
     }
 
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c2"));
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "color_minutes"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_minutes)
     {
       active_config.color_minutes = value_casted;
       color_changed = true;
     }
 
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c3"));
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "color_past_to"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_past_to)
     {
       active_config.color_past_to = value_casted;
       color_changed = true;
     }
 
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "c4"));
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "color_hours"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.color_hours)
     {
       active_config.color_hours = value_casted;
       color_changed = true;
     }
   }
-  else if(active_config.section == 3) //brightness setup
+
+  if(set_brightness) //brightness setup
   {
     ESP_LOGI(TAG3, "Process color config");
 
@@ -339,7 +345,8 @@ static void save_config(char *config_raw, size_t length)
       brightness_changed = true;
     }
   }
-  else if(active_config.section == 4) //saturation setup
+
+  if(set_saturation) //saturation setup
   {
     ESP_LOGI(TAG3, "Process color config");
     value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "sat"));
@@ -402,6 +409,9 @@ static void save_config(char *config_raw, size_t length)
         {
           err = nvs_set_u16(my_handle, "hour", active_config.hour);
           err = nvs_set_u16(my_handle, "minute", active_config.minute);
+          err = nvs_set_u16(my_handle, "year", active_config.year);
+          err = nvs_set_u16(my_handle, "month", active_config.month);
+          err = nvs_set_u16(my_handle, "day", active_config.day);
         }
         printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
      }

@@ -220,43 +220,52 @@
 		</div>
 		<div id=time_setup>
 		<p>
-	    <input type="radio" name="section" value="0" onchange="init_sub_sections();" checked>Netzwerkzeit
+	    <input type="radio" name="use_ntp" value="1" onchange="init_sub_sections();" checked>Netzwerkzeit
 
-		<input type="radio" name="section" value="1" onchange="init_sub_sections();">Manuelle Eingabe
+		<input type="radio" name="use_ntp" value="0" onchange="init_sub_sections();">Manuelle Eingabe
 		</p>
 
 
 		<div id=manualtime>
 			<div class="field-group">
 				<label>Jahr</label>
-				<input name="year" type="text" size="2">
+				<input name="year" type="number" size="5" min="2020" max="2037">
 			</div>
 			<div class="field-group">
 			  <label>Monat</label>
-			  <input name="month" type="text" size="2">
+			  <input name="month" type="number" size="3" min="1" max="12">
 			</div>
 			<div class="field-group">
 				<label>Tag</label>
-				<input name="day" type="text" size="2">
+				<input name="day" type="number" size="3" min="1" max="31">
 			</div>
 			<div class="field-group">
 				<label>Stunde</label>
-				<input name="hour" type="text" size="2">
+				<input name="hour" type="number" size="3" min="0" max="23">
 			</div>
 			<div class="field-group">
 				<label>Minute</label>
-				<input name="minute" type="text" size="2">
+				<input name="minute" type="number" size="3" min="0" max="59">
 			</div>
 		</div>
 
 		<div id=ntpsettings>
 			<div class="field-group">
 			  <label>NTP Server</label>
-			  <input name="ntpServer" type="text" size="20">
+			  <input name="ntp_server" type="text" size="20">
 			</div>
 			<div class="field-group">
 				<label>Time Offset</label>
-				<input name="timeOffset" type="text" size="2">
+				<select name="time_offset">
+					<option value="0" selected>Europe/Berlin</option>
+					<option value="1">UTC-3</option>
+					<option value="2">UTC-2</option>
+					<option value="3">UTC-1</option>
+					<option value="4">UTC</option>
+					<option value="5">UTC+1</option>
+					<option value="6">UTC+2</option>
+					<option value="7">UTC+3</option>
+				</select>		
 			</div>
 		</div>
 		<hr>
@@ -273,7 +282,7 @@
 				<tr>
 					<td style="width: 100px">
 						<p><label>ITS +<br>OCLOCK</label></p>
-						  <select name="c1" id="inputColor0">
+						  <select name="color_its_oclock" id="inputColor0">
 							  <option value="0" selected>Red</option>
 							  <option value="32">Orange</option>
 							  <option value="64">Yellow</option>
@@ -287,7 +296,7 @@
 
 					<td style="width: 100px">
 					  <p><label>FIVE, TEN,<br>..., HALF</label></p>
-					  <select name="c2" id="inputColor1">
+					  <select name="color_minutes" id="inputColor1">
 						  <option value="0">Red</option>
 						  <option value="32" selected>Orange</option>
 						  <option value="64">Yellow</option>
@@ -301,7 +310,7 @@
 
 					<td style="width: 100px">
 						<p><label>TO +<br>PAST</label></p>
-					  <select name="c3" id="inputColor2">
+					  <select name="color_past_to" id="inputColor2">
 						  <option value="0">Red</option>
 						  <option value="32">Orange</option>
 						  <option value="64" selected>Yellow</option>
@@ -314,7 +323,7 @@
 
 					<td style="width: 100px">
 						<p><label>ONE, TWO,<br>..., TWELVE</label></p>
-					  <select name="c4" id="inputColor3">
+					  <select name="color_hours" id="inputColor3">
 						  <option value="0">Red</option>
 						  <option value="32">Orange</option>
 						  <option value="64">Yellow</option>
@@ -409,18 +418,17 @@ function performConnect() {
 
 
 function init_top_sections()
-
 {
 	if(document.top_settings.top_section.value == 0)
-	{ document.getElementById("general_settings").style.display = "block"; }
+	{ 
+		document.getElementById("general_settings").style.display = "block";
+		document.getElementById("wifi_settings").style.display = "none"; 
+	}
 	else
-	{ document.getElementById("general_settings").style.display = "none"; }
-
-	if(document.top_settings.top_section.value == 1)
-	{ document.getElementById("wifi_settings").style.display = "block"; }
-	else
-	{ document.getElementById("wifi_settings").style.display = "none"; }
-
+	{ 
+		document.getElementById("general_settings").style.display = "none"; 
+		document.getElementById("wifi_settings").style.display = "block";
+	}
 }
 
 
@@ -450,17 +458,17 @@ function init_sections()
 }
 
 	function init_sub_sections()
-
 	{
-		if(document.settings.section.value == 0)
-		{ document.getElementById("ntpsettings").style.display = "block"; }
+		if(document.settings.use_ntp.value == 1)
+		{ 
+			document.getElementById("ntpsettings").style.display = "block"; 
+			document.getElementById("manualtime").style.display = "none"; 
+		}
 		else
-		{ document.getElementById("ntpsettings").style.display = "none"; }
-
-		if(document.settings.section.value == 1)
-		{ document.getElementById("manualtime").style.display = "block"; }
-		else
-		{ document.getElementById("manualtime").style.display = "none"; }
+		{ 
+			document.getElementById("ntpsettings").style.display = "none"; 
+			document.getElementById("manualtime").style.display = "block"; 
+		}
 	}
 	
 
