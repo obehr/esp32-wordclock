@@ -233,6 +233,14 @@ static void save_config(char *config_raw, size_t length)
     json_object = cJSON_GetObjectItemCaseSensitive(json, "use_ntp");
     if(cJSON_IsString(json_object))
     {
+      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "time_offset"));
+      if(value_casted != -1 && value_casted < 7 && value_casted != active_config.time_offset)
+      {
+        ESP_LOGI(TAG3, "casted time_offset value %d", value_casted);
+        active_config.time_offset = value_casted;
+        time_changed = true;
+      }
+
       bool use_ntp = strcmp(json_object->valuestring, "1") == 0;
       ESP_LOGI(TAG3, "casted use_ntp value %d", use_ntp);
       if(active_config.use_ntp != use_ntp)
@@ -247,13 +255,7 @@ static void save_config(char *config_raw, size_t length)
     { 
       ESP_LOGI(TAG3, "Process network time config");
 
-      value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "time_offset"));
-      if(value_casted != -1 && value_casted < 7 && value_casted != active_config.time_offset)
-      {
-        ESP_LOGI(TAG3, "casted time_offset value %d", value_casted);
-        active_config.time_offset = value_casted;
-        time_changed = true;
-      }
+      
     }
     else //manual time setup
     {

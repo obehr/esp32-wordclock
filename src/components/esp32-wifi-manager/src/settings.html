@@ -225,6 +225,19 @@
 		<input type="radio" name="use_ntp" value="0" onchange="init_sub_sections();">Manuelle Eingabe
 		</p>
 
+		<div class="field-group">
+			<label>Time Offset</label>
+			<select name="time_offset">
+				<option value="0" selected>Europe/Berlin</option>
+				<option value="1">UTC-3</option>
+				<option value="2">UTC-2</option>
+				<option value="3">UTC-1</option>
+				<option value="4">UTC</option>
+				<option value="5">UTC+1</option>
+				<option value="6">UTC+2</option>
+				<option value="7">UTC+3</option>
+			</select>		
+		</div>
 
 		<div id=manualtime>
 			<div class="field-group">
@@ -253,19 +266,6 @@
 			<div class="field-group">
 			  <label>NTP Server</label>
 			  <input name="ntp_server" type="text" size="20">
-			</div>
-			<div class="field-group">
-				<label>Time Offset</label>
-				<select name="time_offset">
-					<option value="0" selected>Europe/Berlin</option>
-					<option value="1">UTC-3</option>
-					<option value="2">UTC-2</option>
-					<option value="3">UTC-1</option>
-					<option value="4">UTC</option>
-					<option value="5">UTC+1</option>
-					<option value="6">UTC+2</option>
-					<option value="7">UTC+3</option>
-				</select>		
 			</div>
 		</div>
 		<hr>
