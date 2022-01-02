@@ -139,7 +139,7 @@ void deactivate_ntp()
 }
 
 
-void get_tm_from_config()
+void get_time_from_config()
 {
   if(current_config->year > 1900 && current_config->year < 2038)
   { manual_time.tm_year=current_config->year-1900; }
@@ -248,7 +248,7 @@ void cb_received_config(void *pvParameter){
 
   if(current_config->time_changed)
   {
-    get_tm_from_config();    
+    get_time_from_config();    
     set_time_config(current_config->use_ntp, current_config->time_offset);
     
     //reset boolean to false
@@ -276,19 +276,25 @@ void cb_received_config(void *pvParameter){
 void cb_display_off(void *pvParameter){
   ESP_LOGI(TAG, "callback display off");
   my_display.mode = 6;
+  set_display_status(false);
 }
 
 void cb_display_on(void *pvParameter){
   ESP_LOGI(TAG, "callback display on");
   my_display.mode = 7;
+  set_display_status(true);
 }
+
 void cb_strip_off(void *pvParameter){
   ESP_LOGI(TAG, "callback strip off");
   my_display.mode = 4;
+  set_stripe_status(false);
 }
+
 void cb_strip_on(void *pvParameter){
   ESP_LOGI(TAG, "callback strip on");
   my_display.mode = 5;
+  set_stripe_status(true);
 }
 
 bool wait_for_sync()
@@ -412,37 +418,6 @@ static void loop_time(void *pvParameters)
   }
 }
 
-/*bool synched=false;
-  while(!synched)
-  {
-    time_t now;
-    struct tm timeinfo;
-    char strftime_buf[64];
-
-    if(wait_for_sync())
-    {
-      ESP_LOGI(TAG, "Now it is in sync");
-      
-      localtime_r(&now, &timeinfo);
-      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-      ESP_LOGI(TAG, "The current date/time in New York is: %s", strftime_buf);
-      synched=true;
-    }
-    else
-    {
-      localtime_r(&now, &timeinfo);
-      strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-      ESP_LOGI(TAG, "Finally failed");
-      if (timeinfo.tm_year < (2016 - 1900)) {
-          ESP_LOGI(TAG, "The time is still out of range: %s", strftime_buf);
-      }
-      else {
-          ESP_LOGI(TAG, "Time is in range, though: %s", strftime_buf);
-          synched = true;
-      }
-    }
-  }*/
-
 static void start_loop_display(void *pvParameters)
 {
   ESP_LOGI(TAG, "Call my_display.loop_display");
@@ -468,9 +443,9 @@ void app_main() {
   }
   ESP_ERROR_CHECK( err );
   current_config = get_initial_config();
-  get_tm_from_config();
+  get_time_from_config();
   set_time_config(current_config->use_ntp, current_config->time_offset);
-  
+
   wifi_manager_init();
 /* start the wifi manager */
 	wifi_manager_start();
@@ -494,6 +469,8 @@ void app_main() {
   my_display.setze_farben(current_config->color_its_oclock,current_config->color_minutes,current_config->color_past_to,current_config->color_hours);
   my_display.setze_helligkeit(current_config->brightness);
   my_display.setze_saettigung(current_config->saturation);
+  my_display.strip_on = get_stripe_status();
+  my_display.display_on = get_display_status();
   
   
   xTaskCreatePinnedToCore(&loop_time, "loop time", 4000, NULL, 5, NULL, 0);

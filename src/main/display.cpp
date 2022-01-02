@@ -51,8 +51,7 @@ class Display {
     char led_letters[64];
     uint16_t led_colors[64] = {0};
     
-    bool display_on = true;
-
+    
     const char matrix_clockface_v1[8][8] = 
     {
       {'i', 't', 's', 'o', 'f', 't', 'w', 'e'},
@@ -98,8 +97,6 @@ class Display {
     
     CRGBW leds[33];
     CRGB *ledsRGB = (CRGB *) &leds[0];
-
-    bool strip_on = true;
     #endif
 
     CRGBArray<64> matrix;
@@ -744,6 +741,8 @@ class Display {
     int16_t led_brightness = 0;
     int16_t led_saturation = 0;
     int16_t strip_brightness = 100;
+    bool display_on = true;
+    bool strip_on = true;
     Display()
     {
       ESP_LOGI(TAG2, "construct display");

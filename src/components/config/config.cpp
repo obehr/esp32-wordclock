@@ -38,6 +38,7 @@ typedef struct {
   bool set_saturation;
 } my_config;
 
+
 static bool config_available = false;
 
 static my_config valid_config;
@@ -74,7 +75,7 @@ static void init_config()
 
   esp_err_t err;
   nvs_handle_t my_handle;
-  err = nvs_open("storage", NVS_READWRITE, &my_handle);
+  err = nvs_open("storage", NVS_READ, &my_handle);
   if (err != ESP_OK) {
     ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
   } else {
@@ -145,6 +146,76 @@ static my_config* get_initial_config()
   
   ESP_LOGI(TAG3, "Passing active config");
   return &active_config;
+}
+
+static bool get_stripe_status()
+{
+  ESP_LOGI(TAG3, "Get stripe status");
+  bool status = false;
+  uint8_t int_status;
+  esp_err_t err;
+  nvs_handle_t my_handle;
+  err = nvs_open("storage", NVS_READ, &my_handle);
+  if (err != ESP_OK) {
+    ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+  } else {
+    err = nvs_get_u8(my_handle, "status_stripe", &int_status);
+    if(err == ESP_OK)
+    { 
+      status = (int_status==1);
+      ESP_LOGI(TAG3, "Read status_stripe from NVS %d", status);
+    }
+  }
+  return status;
+}
+
+static bool get_stripe_status()
+{
+  ESP_LOGI(TAG3, "Get display status");
+  bool status = false;
+  uint8_t int_status;
+  esp_err_t err;
+  nvs_handle_t my_handle;
+  err = nvs_open("storage", NVS_READ, &my_handle);
+  if (err != ESP_OK) {
+    ESP_LOGI(TAG3, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+  } else {
+    err = nvs_get_u8(my_handle, "status_display", &int_status);
+    if(err == ESP_OK)
+    { 
+      status = (int_status==1);
+      ESP_LOGI(TAG3, "Read status_display from NVS %d", status);
+    }
+  }
+  return status;
+}
+
+static void set_stripe_status(bool status)
+{
+  ESP_LOGI(TAG3, "Set stripe status %d", status);
+  uint8_t int_status = (status)?1:0;
+  esp_err_t err;
+  nvs_handle_t my_handle;
+  err = nvs_open("storage", NVS_READWRITE, &my_handle);
+  if (err != ESP_OK) {
+      printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+  } else {
+     err = nvs_set_u8(my_handle, "status_stripe", int_status);
+  }
+}
+
+static void set_display_status(bool status)
+{
+  ESP_LOGI(TAG3, "Set display status %d", status);
+  uint8_t int_status = (status)?1:0;
+  esp_err_t err;
+  nvs_handle_t my_handle;
+  err = nvs_open("storage", NVS_READWRITE, &my_handle);
+  if (err != ESP_OK) {
+      printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+  } else {
+     err = nvs_set_u8(my_handle, "status_display", int_status);
+  }
 }
 
 /*static void* get_config()
