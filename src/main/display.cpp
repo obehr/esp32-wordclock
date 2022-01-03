@@ -11,14 +11,14 @@
 
 //#define NUM_LEDS 512
 #define NUM_LEDS 64 //unused
-#define DATA_PIN 32
+#define DATA_PIN 26 //kueche 26 mama 32
 #define LED_TYPE    WS2812B
 #define STRIP_NUM_LEDS 9 //unused
-//#define STRIP_DATA_PIN 32
+#define STRIP_DATA_PIN 32
 #define COLOR_ORDER GRB
-#define VARIANT_LED_NUMBERING 2 //mama 2 //saskia u kueche 1
-#define VARIANT_CLOCKFACE 0 //kueche 2 //saskia 0 //mama 0
-#define ORIENTATION 0 //saskia und kueche 2 mama 0
+#define VARIANT_LED_NUMBERING 1 //mama 2 //saskia u kueche 1
+#define VARIANT_CLOCKFACE 2 //kueche 2 //saskia 0 //mama 0
+#define ORIENTATION 3 //saskia 2 kueche 3 mama 0
 
 static const char TAG2[] = "display";
 

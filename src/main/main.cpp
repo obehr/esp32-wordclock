@@ -263,11 +263,13 @@ void cb_received_config(void *pvParameter){
   }
   if(current_config->brightness_changed)
   {
+    ESP_LOGI(TAG, "got new brightness: %d", current_config->brightness);
     my_display.setze_helligkeit(current_config->brightness);
     current_config->brightness_changed = false;
   }
   if(current_config->saturation_changed)
   {
+    ESP_LOGI(TAG, "got new saturation: %d", current_config->saturation);
     my_display.setze_saettigung(current_config->saturation);
     current_config->saturation_changed = false;
   }
@@ -318,15 +320,65 @@ bool wait_for_sync()
     
 }
 
+/*void print_ip_address(char[] *ip)
+{
+ int wortIP[2][2] =
+        { 4, 1, 4, 2 };
+    cf.reiheLedsInListe (wortIP, 2, 3, Wordlayout);
+    cf.bearbeiteListe (5);
+    delay (2000);
+    cf.bearbeiteListe (6);
+
+    for (int i = startOktett; i <= endeOktett; i++)
+    {
+        Serial.println ();
+        uint8_t oktettInt = ip[i];
+        Serial.print (oktettInt);
+        char oktettChar[3];
+        itoa (oktettInt, oktettChar, 10);
+        for (int j = 0; j < 3; j++)
+        {
+            Serial.print (" -> ");
+            int ziffer = oktettChar[j] - '0';
+            Serial.print (ziffer);
+            if (ziffer > 0 && ziffer <= 9)
+            {
+                cf.reiheStundenInListe (ziffer, 3, Wordlayout);
+                cf.bearbeiteListe (4);
+                delay (500);
+                cf.bearbeiteListe (6);
+            }
+            else if (ziffer == 0)
+            {
+                cf.reiheStundenInListe (10, 3, Wordlayout);
+                cf.bearbeiteListe (4);
+                delay (500);
+                cf.bearbeiteListe (6);
+            }
+            else
+            {
+                break;  //Ende der Zahl
+            }
+        }
+    }
+}
+
+  int count_dot = 0;
+  for(int i=0; i<16; i++)
+  {
+	  ESP_LOGI(TAG, "printing digit %d!", ip[i]);
+  }
+}*/
+
 void cb_connection_ok(void *pvParameter){
 	ip_event_got_ip_t* param = (ip_event_got_ip_t*)pvParameter;
 
 	/* transform IP to human readable string */
 	char str_ip[16];
 	esp_ip4addr_ntoa(&param->ip_info.ip, str_ip, IP4ADDR_STRLEN_MAX);
-
+  
 	ESP_LOGI(TAG, "I have a connection and my IP is %s!", str_ip);
-
+  //print_ip_address(&str_ip);
   time_t now;
   struct tm timeinfo;
   char strftime_buf[64];

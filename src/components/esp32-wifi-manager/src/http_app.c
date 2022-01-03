@@ -211,13 +211,13 @@ static esp_err_t http_server_post_handler(httpd_req_t *req){
 		// POST /settings.json
 		ESP_LOGI(TAG, "In settings.json clause");
 
-		char content[300];
+		char content[600];
 
 		/* Truncate if content length larger than the buffer */
 		//size_t recv_size = MIN(req->content_len, sizeof(content));
 		size_t recv_size = req->content_len;
 
-		if(recv_size > 300)
+		if(recv_size > 600)
 		{
 			return ESP_FAIL;
 		}

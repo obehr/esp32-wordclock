@@ -192,7 +192,7 @@
 
     </style>
 
-    <title>Wordclock Settings</title>
+    <title>Wordclock Allgemein Einstellungen</title>
 
   </head>
 
@@ -347,7 +347,7 @@
 	</div>
 	<div id="saturationsetting">
 		<div class="field-group">
-			<input type="range" id="sat" name="sat" min="0" max="255">
+			<input type="range" name="saturation" min="0" max="255">
 		</div>
 		<hr>
 	</div>
@@ -358,7 +358,7 @@
 	</div>
 	<div id="brightnesssetting">
 		<div class="field-group">
-			<input type="range" id="bri" name="bri" min="0" max="255">
+			<input type="range" name="brightness" min="0" max="255">
         </div>
 		<hr>
 	</div>
@@ -392,6 +392,7 @@
 				<input id="join" type="button" value="Verbinden"/>
 			</div>
 		</form>
+		<div class="ape"><a href="index.html">WLAN Verwaltung</a><div></div>
 	</div>
 
 
@@ -1003,11 +1004,6 @@ function init_sections()
 
       };
 
-	  $('form').on('submit', function(e) {
-
-		performConnect();
-
-		});
       
       $('form').on('submit', function(e) {
 

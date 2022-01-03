@@ -151,7 +151,7 @@ static my_config* get_initial_config()
 static bool get_stripe_status()
 {
   ESP_LOGI(TAG3, "Get stripe status");
-  bool status = false;
+  bool status = true;
   uint8_t int_status;
   esp_err_t err;
   nvs_handle_t my_handle;
@@ -172,7 +172,7 @@ static bool get_stripe_status()
 static bool get_display_status()
 {
   ESP_LOGI(TAG3, "Get display status");
-  bool status = false;
+  bool status = true;
   uint8_t int_status;
   esp_err_t err;
   nvs_handle_t my_handle;
@@ -409,9 +409,9 @@ static void save_config(char *config_raw, size_t length)
 
   if(set_brightness) //brightness setup
   {
-    ESP_LOGI(TAG3, "Process color config");
+    ESP_LOGI(TAG3, "Process brightness config");
 
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "bri"));
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "brightness"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.brightness)
     {
       active_config.brightness = value_casted;
@@ -421,8 +421,8 @@ static void save_config(char *config_raw, size_t length)
 
   if(set_saturation) //saturation setup
   {
-    ESP_LOGI(TAG3, "Process color config");
-    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "sat"));
+    ESP_LOGI(TAG3, "Process saturation config");
+    value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "saturation"));
     if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.saturation)
     {
       active_config.saturation = value_casted;
