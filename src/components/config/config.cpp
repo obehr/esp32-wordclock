@@ -423,7 +423,7 @@ static void save_config(char *config_raw, size_t length)
   {
     ESP_LOGI(TAG3, "Process saturation config");
     value_casted = get_number(cJSON_GetObjectItemCaseSensitive(json, "saturation"));
-    if(value_casted != -1 && value_casted <= 255 && value_casted != active_config.saturation)
+    if(value_casted >= 1 && value_casted <= 255 && value_casted != active_config.saturation)
     {
       active_config.saturation = value_casted;
       saturation_changed = true;

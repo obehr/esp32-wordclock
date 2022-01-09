@@ -532,13 +532,13 @@ class Display {
             { ausstehenderAufbau = true; }
             ledIndexAbbau = liste_abbau.get_index(ledId);
             if(ledIndexAbbau==-1)
-            { matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit); }
+            { matrix[ledId].setHSV( led_colors[ledId], led_saturation, neueHelligkeit); }
             else {
               int helligkeitAbbau = berechneHelligkeit(i,ledIndexAbbau,schrittweiteAbbau,offsetAbbau,led_brightness,false);
               if(neueHelligkeit>helligkeitAbbau)
               {
                 liste_abbau.clear_item(ledIndexAbbau);
-                matrix[ledId].setHSV( led_colors[ledId], 200, neueHelligkeit);
+                matrix[ledId].setHSV( led_colors[ledId], led_saturation, neueHelligkeit);
               }
             }
           }
@@ -552,7 +552,7 @@ class Display {
               neueHelligkeit = berechneHelligkeit(i,k,schrittweiteAbbau,offsetAbbau,led_brightness,false);
               if(neueHelligkeit>0)
               { ausstehenderAbbau = true; }
-              matrix[ledId].setHSV(led_colors[ledId], 200, neueHelligkeit);
+              matrix[ledId].setHSV(led_colors[ledId], led_saturation, neueHelligkeit);
             }
           }
           FastLED.show();
@@ -587,7 +587,7 @@ class Display {
         ledId = (liste==0)?liste_abbau.get_item(i):(liste==1)?liste_aufbau.get_item(i):(liste==2)?liste_effekt.get_item(i):(liste==3)?liste_nachricht.get_item(i):-1;
         
         if(aktion==0) { matrix[ledId].setHSV(0,0,0); }
-        else if(aktion==1) { matrix[ledId].setHSV(led_colors[ledId], 200, 100); }
+        else if(aktion==1) { matrix[ledId].setHSV(led_colors[ledId], led_saturation, 100); }
         else if(aktion==2) { matrix[ledId].fadeToBlackBy(128); }
         else if(aktion==3) { matrix[ledId].setHSV(96, 200, 100); }
         else if(aktion==4) { matrix[ledId].setHSV(0, 200, 100); }
@@ -679,8 +679,15 @@ class Display {
 
   void bearbeiteListe()
     {
+      if(mode == -1) //Leerlauf
+      { return; }
+      else if(mode==0) //tue nichts außer Leerlauf bestätigen
+      { 
+        ESP_LOGI(TAG2, "Command to stop animation. Confirm with -1");
+        mode = -1;
+      }
       //ESP_LOGI(TAG2, "bearbeite Liste %d", mode);
-      if(mode==1) //schalten
+      else if(mode==1) //schalten
       { 
         ESP_LOGI(TAG2, "schalte LEDs um");
         if(display_on)
@@ -692,7 +699,7 @@ class Display {
         liste_abbau.clear();
         mode = -1;
       }
-      if(mode==2) //fade over
+      else if(mode==2) //fade over
       {
         ESP_LOGI(TAG2, "fade LEDs");
         if(display_on)
@@ -739,7 +746,7 @@ class Display {
   public:
     int16_t mode = 0; //0 = wait, 1 = set time, 2 = animate
     int16_t led_brightness = 0;
-    int16_t led_saturation = 0;
+    int16_t led_saturation = 1;
     int16_t strip_brightness = 100;
     bool display_on = true;
     bool strip_on = true;
@@ -771,16 +778,8 @@ class Display {
     {
       while(true)
       {
-        if(mode > 0)
-        { 
-          bearbeiteListe();
-        }
-        else if(mode == 0)
-        { 
-          ESP_LOGI(TAG2, "Command to stop animation. Confirm with -1");
-          mode = -1; 
-        }
-          vTaskDelay( pdMS_TO_TICKS(2000) );
+        bearbeiteListe();
+        vTaskDelay( pdMS_TO_TICKS(2000) );
       }
     }
     
